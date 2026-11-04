@@ -33,6 +33,8 @@ check("つらい言葉（死・殺など）を使わない", !P.some((p) => /[�
 
 const html = readFileSync(path.join(root, "index.html"), "utf8");
 check("終えた回を消すのは同じ回のときだけ・0時を過ぎたホームの「今日」のボタンは描き直す（2026-11-04 CodeRabbit）", /c\.date === run\.date && c\.id === run\.id\) s2\.runs\[MODE\] = null/.test(html) && /\$\("go-d"\)\.onclick = \(\) => \(k !== todayKey\(\) \? home\(\)/.test(html));
+check("別のタブで今日の分を終えたあと、古い画面から今日・上級をもう一度始めない（2026-11-04 CodeRabbit）", /\(mode === "d" && s\.days\[k\]\) \|\| \(mode === "h" && s\.hdays\[k\]\)\) return;/.test(html));
+check("正解を入れられなかったら正解の画面を出さない・別のタブのまちがいも数える（2026-11-04 CodeRabbit）", /if \(!saved\) \{ toast\("別の画面で先に進んでいます"\); return play\(\); \}/.test(html) && /for \(const c of r0\.cur\.tried \|\| \[\]\) if \(!cur\.tried\.includes\(c\)\) cur\.tried\.push\(c\)/.test(html));
 const ext = [...html.matchAll(/(?:src|href)="(https?:[^"]+)"/g)].map((m) => m[1]).filter((u) => !/^https:\/\/fonts\.googleapis\.com(\/|$)|^https:\/\/ko-fi\.com\/satouaaaaa$/.test(u));
 check("外から読むのは文字（Google Fonts）だけ。スクリプト・広告・解析を入れない", ext.length === 0, ext.join(","));
 check("CSP で通信先を自分だけにしている", /connect-src 'self'/.test(html) && !/connect-src[^;"]*https/.test(html));

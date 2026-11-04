@@ -253,6 +253,7 @@ function startRun(mode, opt) {
   const k = todayKey();
   save((s) => {
     if (mode !== "p" && s.runs[mode] && s.runs[mode].date === k) return; // 続きから
+    if ((mode === "d" && s.days[k]) || (mode === "h" && s.hdays[k])) return; // 別のタブで今日の分を終えていたら、もう一度は始めない（ホームに戻る）
     let list;
     if (mode === "d") list = dailyList(k);
     else if (mode === "h") list = hardList(k);
@@ -322,8 +323,11 @@ function guess(ch) {
   // 正解：別のタブで先に進んでいたら、この画面の答えは入れない
   if (!same(load().runs[MODE])) { toast("別の画面で先に進んでいます"); return play(); }
   cur.done = true; buzz([10, 40, 10]);
+  { const r0 = load().runs[MODE]; if (r0 && r0.cur && r0.cur.i === cur.i) { for (const c of r0.cur.tried || []) if (!cur.tried.includes(c)) cur.tried.push(c); cur.hints = Math.max(cur.hints, r0.cur.hints || 0); } } // 別のタブで同じ問題をまちがえた・ヒントを見た分も数える
   const mistakes = cur.tried.length + cur.hints, st = starsOf(mistakes);
-  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); });
+  let saved = false;
+  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; saved = true; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); });
+  if (!saved) { toast("別の画面で先に進んでいます"); return play(); }
   document.querySelectorAll(".tile").forEach((b) => (b.disabled = true));
   $("bd").innerHTML = boardHtml(p, p.x, { win: true, mask: 15, yomi: p.r });
   $("near").innerHTML = "";
