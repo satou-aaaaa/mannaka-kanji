@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'">
+<title>まんなか漢字</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="まんなかに1文字入れて、上下左右の4つの熟語を完成させる1日3問の漢字パズル。時間制限なし、3分で遊べます。">
+<meta name="theme-color" content="#f3ede0">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="まんなか漢字">
+<meta property="og:title" content="まんなか漢字：4つの熟語をつなぐ1文字は？">
+<meta property="og:description" content="まんなかに入る漢字は1つだけ。だれでも同じ1日3問、3分で遊べます。">
+<meta property="og:url" content="https://satou-aaaaa.github.io/mannaka-kanji/">
+<meta property="og:image" content="https://satou-aaaaa.github.io/mannaka-kanji/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="まんなか漢字：上下左右の熟語をつなぐ1文字を当てるパズル">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* 和紙の地に墨の字、朱の印。盤は十字に5マス、矢印で熟語の向きを見せる */
+:root{
+  --bg:#f3ede0; --paper:#fbf8f1; --ink:#1f1b16; --ink2:#6b6257; --line:#1f1b1622; --shu:#c43d2b; --shu2:#8f2a1d; --ok:#2f7d5b; --near:#c9932e; --tile:#fffdf8;
+  --f-disp:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{margin:0;background-color:var(--bg);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .28 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");color:var(--ink);font-family:var(--f-body);font-weight:500;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:460px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 28px;display:flex;flex-direction:column;gap:14px;min-height:100%;box-sizing:border-box}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px}
+h1{font-family:var(--f-disp);font-weight:800;font-size:22px;margin:0;letter-spacing:.1em}
+h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--ink2);margin-left:8px;font-weight:500}
+.icon{all:unset;cursor:pointer;font-size:18px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);box-sizing:border-box;padding:0 8px;background:var(--paper)}
+.icon:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
+.dots{display:flex;gap:6px;flex:1;max-width:140px}
+.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.dots i.on{background:var(--shu)}.dots i.done{background:var(--ink)}
+button.main,a.main{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:12px;background:var(--shu);color:#fff;font-weight:700;font-size:17px;padding:0 16px;text-align:center;box-shadow:0 4px 0 var(--shu2)}
+button.main:active{transform:translateY(2px);box-shadow:0 2px 0 var(--shu2)}
+button.main.alt{background:var(--ink);box-shadow:0 4px 0 #000}
+button.sub,a.sub{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:15px;padding:0 12px;text-align:center}
+button.sub:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:10px}.row>.sub,.row>.main{flex:1 1 0}
+.note{color:var(--ink2);font-size:13px;line-height:1.6;margin:0;text-align:center}
+.note a{color:var(--shu2)}
+/* 盤：3×3 の十字。上・左・まんなか・右・下 */
+.board{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:0;width:min(100%,330px);aspect-ratio:1;margin:4px auto 0;position:relative}
+.cell{display:grid;place-items:center;position:relative}
+.cell .k{width:76%;aspect-ratio:1;display:grid;place-items:center;background:var(--tile);border:1.5px solid var(--ink);border-radius:8px;font-family:var(--f-disp);font-weight:800;font-size:clamp(34px,11vw,48px);line-height:1;box-shadow:0 3px 0 #1f1b1633;position:relative;z-index:1}
+.cell.c .k{border:2.5px dashed var(--shu);background:#fff;color:var(--shu);transition:transform .2s}
+.cell.c .k.fill{border-style:solid;color:var(--ink)}
+.cell.c .k.bad{animation:shake .4s}
+.cell.c .k.win{background:var(--shu);color:#fff;border-color:var(--shu2);animation:pop .5s}
+@keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pop{40%{transform:scale(1.15)}}
+/* 矢印：熟語の向き（上→中、左→中、中→右、中→下） */
+.ar{position:absolute;z-index:0;color:var(--ink2);font-size:20px;font-weight:700;display:grid;place-items:center}
+.ar.t{left:33.3%;width:33.3%;top:29%;height:8%}.ar.l{top:33.3%;height:33.3%;left:29%;width:8%}
+.ar.r{top:33.3%;height:33.3%;left:63%;width:8%}.ar.b{left:33.3%;width:33.3%;top:63%;height:8%}
+.ar.ok{color:var(--ok)}.ar.ng{color:#b9ad9c}
+.cell[data-pos=t] .yomi{top:-4px;bottom:auto}
+.mk{position:absolute;right:2px;top:2px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;z-index:2;color:#fff}
+.mk.ok{background:var(--ok)}.mk.ng{background:#a99d8c}
+.yomi{position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-size:11px;color:var(--ink2);z-index:2;white-space:nowrap}
+/* 札 */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tiles.n12{grid-template-columns:repeat(4,1fr)}
+.tile{all:unset;cursor:pointer;box-sizing:border-box;min-height:60px;display:grid;place-items:center;background:var(--tile);border:1.5px solid var(--ink);border-radius:10px;font-family:var(--f-disp);font-weight:800;font-size:30px;box-shadow:0 4px 0 #1f1b1640;position:relative}
+.tile:active{transform:translateY(2px);box-shadow:0 2px 0 #1f1b1640}
+.tile.out{opacity:.35;box-shadow:none;cursor:default;text-decoration:line-through;text-decoration-color:var(--shu)}
+.tile small{position:absolute;right:5px;bottom:2px;font-size:10px;font-family:var(--f-body);color:var(--near);font-weight:700}
+.status{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink2);min-height:22px}
+.verdict{background:var(--paper);border:1.5px solid var(--ink);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 6px 0 #1f1b1626;animation:up .35s ease-out}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.verdict .hd{display:flex;justify-content:center;align-items:baseline;gap:10px;font-family:var(--f-disp);font-size:26px;font-weight:800}
+.words{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.words div{background:#1f1b160a;border-radius:8px;padding:6px 8px;display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.words b{font-family:var(--f-disp);font-size:20px}
+.words span{font-size:12px;color:var(--ink2)}
+.stars{color:var(--near);letter-spacing:.1em;font-size:20px}
+.stars .off{color:#1f1b1626}
+.near{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;text-align:center;color:var(--ink2)}
+.near b{color:var(--ink);font-family:var(--f-disp);font-size:16px}
+/* ホーム */
+.title{font-family:var(--f-disp);font-weight:800;font-size:40px;letter-spacing:.16em;text-align:center;margin:4px 0 0}
+.lead{text-align:center;color:var(--ink2);margin:0;font-size:14px;line-height:1.7}
+.hero .board{width:min(70%,230px)}
+.hero .cell .k{font-size:clamp(26px,8vw,34px)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.stats b{display:block;font-size:20px;font-family:var(--f-disp)}
+.stats small{color:var(--ink2);font-size:12px}
+.rank{text-align:center;font-size:13px;color:var(--shu2)}
+.share{background:var(--paper);border-radius:12px;padding:12px;white-space:pre-line;font-size:15px;line-height:1.6;text-align:center;border:1px solid var(--line)}
+.shares{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.shares a,.shares button{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:14px;font-weight:700;text-decoration:none;padding:0 6px;box-sizing:border-box;font-family:inherit;cursor:pointer}
+.big{font-family:var(--f-disp);font-size:28px;text-align:center;margin:0}
+.rlist{display:flex;flex-direction:column;gap:8px}
+.rlist div{display:flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.rlist .x{font-family:var(--f-disp);font-weight:800;font-size:30px;width:44px;height:44px;display:grid;place-items:center;border-radius:8px;background:var(--shu);color:#fff}
+.rlist .w{flex:1;font-size:13px;color:var(--ink2);line-height:1.5}
+.rlist .w b{color:var(--ink);font-family:var(--f-disp);font-size:15px}
+/* 漢字帳 */
+.dex{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.dex button{all:unset;cursor:pointer;aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-family:var(--f-disp);font-weight:800;font-size:22px;background:var(--tile);border:1px solid var(--line);position:relative;min-height:44px}
+.dex button.s3{background:var(--shu);color:#fff;border-color:var(--shu2)}
+.dex button.s2{border:2px solid var(--shu)}
+.lv{display:flex;gap:8px}
+.lv button{flex:1}
+.sheet{background:var(--paper);border:1.5px solid var(--ink);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+dialog{border:none;border-radius:16px;background:var(--paper);color:var(--ink);max-width:400px;width:calc(100% - 32px);padding:20px;box-sizing:border-box}
+dialog::backdrop{background:#000000aa}
+dialog h2{font-family:var(--f-disp);margin:0 0 10px;letter-spacing:.1em}
+dialog ol{padding-left:1.3em;margin:0 0 12px;line-height:1.8}
+dialog p{margin:0 0 10px;font-size:14px;line-height:1.7;color:var(--ink2)}
+dialog a{color:var(--shu2)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #0005;max-width:90%;text-align:center}
+.hint{background:var(--paper);border:1px solid var(--shu);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
+footer{margin-top:auto;text-align:center;font-size:12px;color:var(--ink2);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<dialog id="howto" aria-labelledby="howto-t">
+  <h2 id="howto-t">遊び方</h2>
+  <ol>
+    <li>まんなかに入る漢字を、下の札から選びます。</li>
+    <li>矢印の向きに読むと、上下左右の4つが熟語になります。</li>
+    <li>答えは1つだけ。まちがえると、4つのうちいくつ熟語になったかが分かります。</li>
+  </ol>
+  <p>例：上「史」・左「向」・右「昇」・下「位」なら、まんなかは「上」（史上・向上・上昇・上位）。</p>
+  <p>今日の3問はだれでも同じで1日1回。時間制限はありません。熟語は JMdict（EDRDG）から選んでいます。</p>
+  <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
+  <button class="main" id="howto-ok" style="width:100%">わかった</button>
+</dialog>
+<script src="data.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id), app = $("app");
+const SITE = "https://satou-aaaaa.github.io/mannaka-kanji/";
+const FEEDBACK = "https://github.com/satou-aaaaa/mannaka-kanji/issues/new?template=feedback.yml";
+const KEY = "mannaka-v1", EPOCH = "2026-11-04";
+const LV = ["やさしい", "ふつう", "むずかしい"];
+// 1問 = { x:答え, t:難しさ, w:[上+X, 左+X, X+右, X+下], r:[読み], d:[まちがいの札], m:[札ごとの印] }
+const P = window.MK_DATA.P.map((a, i) => ({ id: i, x: a[0], t: a[1], w: a[2], r: a[3], d: a[4], m: a[5] }));
+const POOL = [0, 1, 2].map((t) => P.filter((p) => p.t === t).map((p) => p.id));
+const POS = ["t", "l", "r", "b"]; // 4つの熟語の場所（印 1・2・4・8 の順）
+
+// ---- 日付と乱数（日本時間。だれでも同じ3問）----
+const jstNow = () => new Date(Date.now() + 9 * 3600e3);
+const todayKey = () => jstNow().toISOString().slice(0, 10);
+const dayNo = (k) => Math.round((Date.parse(k) - Date.parse(EPOCH)) / 864e5) + 1;
+function seedOf(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function shuffled(arr, R) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// 難しさごとの問題を、周ごとに混ぜた順で1日 n 問ずつ使う（1周するまで同じ問題は出ない）
+function nth(t, idx) { const pool = POOL[t], cyc = Math.floor(idx / pool.length); return shuffled(pool, rng(seedOf("cycle" + t + ":" + cyc)))[idx % pool.length]; }
+// むずかしいは1日4問ずつ使う（今日の3問目に1問・上級に3問。同じ日に重ならない）
+const dayIdx = (k) => Math.max(0, dayNo(k) - 1);
+const dailyList = (k) => [nth(0, dayIdx(k)), nth(1, dayIdx(k)), nth(2, dayIdx(k) * 4)];
+const hardList = (k) => [1, 2, 3].map((j) => nth(2, dayIdx(k) * 4 + j));
+// 札を並べる：答えと、まちがいの札（今日の3問は8枚・上級は11枚）。並びは問題ごとに決まる
+function tilesOf(p, n) { return shuffled([p.x, ...p.d.slice(0, n - 1)], rng(seedOf("tiles:" + p.id + ":" + n))); }
+const maskOf = (p, ch) => (ch === p.x ? 15 : p.m[p.d.indexOf(ch)] || 0);
+const bits = (m) => [1, 2, 4, 8].filter((b) => m & b).length;
+const starsOf = (m) => (m === 0 ? 3 : m === 1 ? 2 : 1); // m = まちがい＋ヒント
+const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
+
+// ---- 記録（この端末の localStorage だけ）----
+// 進行中の遊びはモードごとに分けて持つ（練習を始めても今日・上級の途中経過を消さない）
+const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
+let MODE = "d";
+let mem = null; // 保存できない環境では、開いているあいだだけここに置く
+function load() { try { const j = localStorage.getItem(KEY); const s = JSON.parse(j === null && mem ? mem : j); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { if (mem) return Object.assign(fresh(), JSON.parse(mem)); } return fresh(); }
+// 保存の前に読み直す（別のタブで進めた記録を消さない）
+function save(fn) { const s = load(); fn(s); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
+const prevDay = (k) => new Date(Date.parse(k) - 864e5).toISOString().slice(0, 10);
+function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
+const RANKS = [[0, "手習い"], [10, "読み手"], [50, "物知り"], [150, "漢字博士"], [400, "生き字引"]];
+const rankOf = (n) => RANKS.filter((r) => n >= r[0]).pop()[1];
+const nextRank = (n) => RANKS.find((r) => r[0] > n);
+
+// ---- 画面 ----
+const md = (k) => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
+function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
+const buzz = (n = 12) => { try { navigator.vibrate && navigator.vibrate(n); } catch (e) {} };
+const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
+function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+$("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
+
+// 盤：上・左・まんなか・右・下。center は表示する字（空なら「？」）
+function boardHtml(p, center, opt = {}) {
+  const ch = { t: p.w[0][0], l: p.w[1][0], r: p.w[2][1], b: p.w[3][1] };
+  const cell = (pos) => {
+    if (!pos) return `<div class="cell"></div>`;
+    if (pos === "c") return `<div class="cell c"><div class="k${center ? " fill" : ""}${opt.win ? " win" : ""}" id="ctr">${center || "？"}</div></div>`;
+    const i = POS.indexOf(pos), mk = opt.mask == null ? "" : `<span class="mk ${opt.mask & (1 << i) ? "ok" : "ng"}">${opt.mask & (1 << i) ? "○" : "×"}</span>`;
+    const yo = opt.yomi ? `<span class="yomi">${opt.yomi[i] || ""}</span>` : "";
+    return `<div class="cell" data-pos="${pos}"><div class="k">${ch[pos]}${mk}</div>${yo}</div>`;
+  };
+  const arrow = (pos, s) => `<div class="ar ${pos}${opt.mask == null ? "" : opt.mask & (1 << POS.indexOf(pos)) ? " ok" : " ng"}" aria-hidden="true">${s}</div>`;
+  return `<div class="board" role="img" aria-label="上「${ch.t}」左「${ch.l}」右「${ch.r}」下「${ch.b}」のまんなかに入る字">${[null, "t", null, "l", "c", "r", null, "b", null].map(cell).join("")}${arrow("t", "↓")}${arrow("l", "→")}${arrow("r", "→")}${arrow("b", "↓")}</div>`;
+}
+
+function home() {
+  const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
+  // 最後の1問を終えて結果を見る前に閉じた日は、開き直したら結果へ進める（記録をつける）
+  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.date === k && r.res.length >= r.list.length) { MODE = m; return finish(); } }
+  const n = Object.keys(s.dex).length, nr = nextRank(n);
+  const rd = s.runs.d && s.runs.d.date === k ? s.runs.d : null, rh = s.runs.h && s.runs.h.date === k ? s.runs.h : null;
+  app.innerHTML = `
+    <div class="hero" aria-hidden="true">${boardHtml(P[0], "")}</div>
+    <h1 class="title">まんなか漢字</h1>
+    <p class="lead">まんなかに1文字入れて、4つの熟語を完成させる。<br>だれでも同じ1日3問。</p>
+    ${done ? `<div class="share">今日の結果\n${done.m.map((m, i) => `${LV[i]} ${"★".repeat(starsOf(m))}`).join("　")}</div>` : ""}
+    <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${LV[rd.res.length]}）` : `今日の3問をとく <small>#${dayNo(k)}</small>`}</button>
+    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（札12枚・ヒントなし）"}</button>` : ""}
+    <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">漢字帳 ${n}/${P.length}</button></div>
+    <div class="stats"><div><b>${streak(s.days)}</b><small>連続の日</small></div><div><b>${Object.keys(s.days).length}</b><small>といた日</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の字</small></div></div>
+    <p class="rank">称号：${rankOf(n)}${nr ? `（あと${nr[0] - n}字で${nr[1]}）` : ""}</p>
+    ${footer()}`;
+  $("go-d").onclick = () => (done ? result("d", k) : startRun("d"));
+  if ($("go-h")) $("go-h").onclick = () => (hdone ? result("h", k) : startRun("h"));
+  $("go-p").onclick = practiceMenu;
+  $("go-dex").onclick = () => dex();
+  bindFooter();
+  if (!s.tut) openHow();
+}
+function practiceMenu() {
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="もどる">←</button><h1>練習<small>今日の記録には入りません（漢字帳には載ります）</small></h1><span></span></header>
+    <p class="note">難しさを選ぶと3問出ます。</p>
+    <div class="lv">${LV.map((l, t) => `<button class="sub" data-t="${t}" style="min-height:64px">${l}</button>`).join("")}</div>${footer()}`;
+  $("back").onclick = home;
+  document.querySelectorAll(".lv button").forEach((b) => (b.onclick = () => startRun("p", +b.dataset.t)));
+  bindFooter();
+}
+function startRun(mode, opt) {
+  const k = todayKey();
+  save((s) => {
+    if (mode !== "p" && s.runs[mode] && s.runs[mode].date === k) return; // 続きから
+    let list;
+    if (mode === "d") list = dailyList(k);
+    else if (mode === "h") list = hardList(k);
+    else if (typeof opt === "object") list = [opt.id];
+    else { const pool = POOL[opt].slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, 3); }
+    s.runs[mode] = { mode, date: k, list, res: [], cur: null };
+  });
+  MODE = mode;
+  play();
+}
+
+let cur = null; // 今の問題：{ i, date, p, tried:[選んだ札], hints }
+function play() {
+  const s = load(), run = s.runs[MODE];
+  if (!run) return home();
+  const i = run.res.length;
+  if (i >= run.list.length) return finish();
+  const p = P[run.list[i]], hard = run.mode === "h", nT = hard ? 12 : 9;
+  // 途中で閉じても、選んだ札とヒントはそのまま
+  const saved = run.cur && run.cur.i === i ? run.cur : { tried: [], hints: 0 };
+  cur = { i, date: run.date, p, tried: saved.tried.slice(), hints: saved.hints, done: false };
+  const label = run.mode === "d" ? LV[p.t] : run.mode === "h" ? "上級" : `練習・${LV[p.t]}`;
+  app.innerHTML = `
+    <header><button class="icon" id="back" aria-label="もどる">←</button>
+      <div class="dots" aria-label="${i + 1}問目／${run.list.length}問">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>
+      <span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}/${run.list.length}</span></header>
+    <div id="bd">${boardHtml(p, "")}</div>
+    <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
+    <div id="near"></div>
+    <div class="tiles${nT === 12 ? " n12" : ""}" id="tiles">${tilesOf(p, nT).map((ch) => `<button class="tile" data-ch="${ch}" aria-label="${ch}">${ch}</button>`).join("")}</div>
+    <div id="after"></div>
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる字を選びます。</p>` : ""}`;
+  $("back").onclick = home;
+  document.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch)));
+  if ($("hint")) $("hint").onclick = hint;
+  paintTried();
+  window.scrollTo(0, 0);
+}
+function keep() { save((s) => { const r = s.runs[MODE]; if (same(r)) r.cur = { i: cur.i, tried: cur.tried.slice(), hints: cur.hints }; }); }
+const same = (r) => r && cur && r.date === cur.date && r.res.length === cur.i && r.list[cur.i] === cur.p.id; // 保存した進み具合が、この画面と同じ問題か
+function paintTried() {
+  const p = cur.p;
+  cur.tried.forEach((ch) => { const b = document.querySelector(`.tile[data-ch="${ch}"]`); if (b) { b.classList.add("out"); b.disabled = true; const m = bits(maskOf(p, ch)); b.innerHTML = `${ch}<small>${m}/4</small>`; } });
+  const miss = cur.tried.length;
+  $("miss").textContent = miss || cur.hints ? `まちがい ${miss}${cur.hints ? `・ヒント ${cur.hints}` : ""}` : "";
+  if (cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < cur.hints ? r : "")) }); }
+  if ($("hint")) $("hint").disabled = cur.hints >= 2 || cur.done;
+}
+function hint() {
+  if (cur.done || cur.hints >= 2) return;
+  cur.hints++; keep(); paintTried();
+  toast(cur.hints === 1 ? "上の熟語の読みを出しました" : "左の熟語の読みも出しました");
+}
+function guess(ch) {
+  if (cur.done || cur.tried.includes(ch)) return;
+  const p = cur.p;
+  if (ch !== p.x) {
+    const m = maskOf(p, ch), n = bits(m);
+    cur.tried.push(ch); keep(); buzz(30);
+    $("bd").innerHTML = boardHtml(p, ch, { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < cur.hints ? r : "")) : null });
+    $("ctr").classList.add("bad");
+    $("near").innerHTML = `<div class="near">「<b>${ch}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
+    paintTried();
+    setTimeout(() => { if ($("ctr") && !cur.done) $("ctr").classList.remove("bad"); }, 450);
+    return;
+  }
+  // 正解：別のタブで先に進んでいたら、この画面の答えは入れない
+  if (!same(load().runs[MODE])) { toast("別の画面で先に進んでいます"); return play(); }
+  cur.done = true; buzz([10, 40, 10]);
+  const mistakes = cur.tried.length + cur.hints, st = starsOf(mistakes);
+  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); });
+  document.querySelectorAll(".tile").forEach((b) => (b.disabled = true));
+  $("bd").innerHTML = boardHtml(p, p.x, { win: true, mask: 15, yomi: p.r });
+  $("near").innerHTML = "";
+  const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
+  $("after").innerHTML = `<div class="verdict" role="status">
+    <div class="hd">「${p.x}」${starStr(st)}</div>
+    <div class="words">${p.w.map((w, j) => `<div><b>${w}</b><span>${p.r[j]}</span></div>`).join("")}</div>
+    <p class="note">${mistakes === 0 ? "一発で正解。" : `まちがい${cur.tried.length}回${cur.hints ? `・ヒント${cur.hints}回` : ""}`}</p>
+    <button class="main" id="next">${last ? "結果を見る" : "次の問題へ"}</button></div>`;
+  $("tiles").style.display = "none";
+  $("next").onclick = play;
+  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
+}
+
+function finish() {
+  const s = load(), run = s.runs[MODE];
+  if (!run) return home();
+  let first = false;
+  const rec = { m: run.res.map((r) => r.m), g: run.res.map((r) => r.g), h: run.res.map((r) => r.h) };
+  save((s2) => {
+    if (run.mode === "d" && !s2.days[run.date]) { s2.days[run.date] = rec; first = true; }
+    if (run.mode === "h" && !s2.hdays[run.date]) { s2.hdays[run.date] = rec; first = true; }
+    s2.runs[MODE] = null;
+  });
+  if (run.mode === "p") return result("p", run.date, false, { list: run.list, ...rec });
+  result(run.mode, run.date, first);
+}
+// 共有の文：答えの字・熟語は出さない。まちがいは「何個熟語になったか」の色だけ
+const sq = (n) => (n >= 2 ? "🟨" : "⬜");
+function shareText(mode, k, rec) {
+  const names = mode === "h" ? ["1", "2", "3"] : LV;
+  return `まんなか漢字${mode === "h" ? " 上級" : ""} #${dayNo(k)} ${md(k)}\n${rec.m.map((m, i) => `${names[i]} ${(rec.g[i] || []).map(sq).join("")}${"💡".repeat(rec.h[i] || 0)}🟩`).join("\n")}`;
+}
+function untilNext() { const n = jstNow(), ms = 864e5 - (n.getTime() % 864e5); return `${Math.floor(ms / 36e5)}時間${Math.floor((ms % 36e5) / 6e4)}分`; }
+function result(mode, k, first, prec) {
+  const s = load();
+  const list = mode === "p" ? prec.list : mode === "d" ? dailyList(k) : hardList(k);
+  const rec = mode === "p" ? prec : (mode === "d" ? s.days : s.hdays)[k];
+  if (!rec) return home();
+  const total = rec.m.reduce((a, b) => a + b, 0), text = shareText(mode, k, rec);
+  const showKofi = first && mode !== "p" && total === 0 && !s.kofi[k + mode];
+  if (showKofi) save((s2) => { s2.kofi[k + mode] = 1; });
+  app.innerHTML = `
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>まんなか漢字<small>${mode === "d" ? `今日の3問 #${dayNo(k)}` : mode === "h" ? "上級" : "練習"}</small></h1><span></span></header>
+    <p class="big">${total === 0 ? "全問一発！" : `まちがい・ヒント ${total}`}</p>
+    <div class="rlist">${list.map((id, j) => { const p = P[id]; return `<div><span class="x">${p.x}</span><span class="w"><b>${p.w.join("・")}</b><br>${starStr(starsOf(rec.m[j]))} ${mode === "h" ? "むずかしい" : LV[p.t]}</span></div>`; }).join("")}</div>
+    ${mode !== "p" ? `<div class="share">${esc(text)}</div>
+    <button class="main" id="share">結果をシェア</button>
+    <div class="shares"><a id="toX" target="_blank" rel="noopener">Xで投稿</a><a id="toLine" target="_blank" rel="noopener">LINEで送る</a><button id="copy">コピー</button></div>
+    <p class="note">🟩正解　🟨2つ以上熟語になった字　⬜1つ以下　💡ヒント<br>次の3問まで あと <b>${untilNext()}</b></p>` : ""}
+    ${mode === "d" && !s.hdays[k] ? `<button class="main alt" id="go-h">上級：むずかしい3問に挑む</button>` : ""}
+    <div class="row"><button class="sub" id="go-p">練習する</button><button class="sub" id="go-dex">漢字帳を見る</button></div>
+    ${showKofi ? `<p class="note kofi">楽しめたら、<a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi でコーヒー1杯の応援</a>をもらえると、新しい問題とゲームづくりの励みになります（任意・遊ぶのはずっと無料）。</p>` : ""}
+    <p class="note"><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a></p>`;
+  $("back").onclick = home;
+  $("go-p").onclick = practiceMenu;
+  $("go-dex").onclick = () => dex();
+  if ($("go-h")) $("go-h").onclick = () => startRun("h");
+  if (mode !== "p") {
+    const withUrl = text + "\n" + SITE;
+    $("toX").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(withUrl);
+    $("toLine").href = "https://line.me/R/share?text=" + encodeURIComponent(withUrl);
+    const copy = (t) => { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("コピーしました"), () => toast("コピーできませんでした")); };
+    $("copy").onclick = () => copy(withUrl);
+    $("share").onclick = () => { if (navigator.share) navigator.share({ text: withUrl }).catch(() => {}); else copy(withUrl); };
+  }
+}
+
+function dex(sel) {
+  const s = load(), got = P.filter((p) => p.x in s.dex);
+  const p = sel != null ? P[sel] : null;
+  app.innerHTML = `
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>漢字帳<small>${got.length}/${P.length}字・★3 ${Object.values(s.dex).filter((x) => x >= 3).length}</small></h1><span></span></header>
+    ${p ? `<div class="sheet">${boardHtml(p, p.x, { yomi: p.r })}<div class="words">${p.w.map((w, j) => `<div><b>${w}</b><span>${p.r[j]}</span></div>`).join("")}</div><div style="text-align:center">${starStr(s.dex[p.x])}</div></div>`
+      : `<p class="note">といた字が集まります（朱は★3）。字を押すと、その問題の熟語と読みが見られます。</p>`}
+    <div class="dex">${got.length ? got.map((q) => `<button data-i="${q.id}" class="s${s.dex[q.x]}" aria-label="${q.x}">${q.x}</button>`).join("") : ""}</div>
+    ${got.length ? "" : `<p class="note">まだありません。今日の3問か練習で集めましょう。</p>`}
+    ${footer()}`;
+  $("back").onclick = home;
+  document.querySelectorAll(".dex button").forEach((b) => (b.onclick = () => { dex(+b.dataset.i); window.scrollTo(0, 0); }));
+  bindFooter();
+}
+
+window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); } };
+home();
+if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
