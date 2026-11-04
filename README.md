@@ -3,9 +3,9 @@
 まんなかに1文字入れて、上下左右の4つの熟語を完成させる1日3問の漢字パズル。
 
 - 遊ぶ: https://satou-aaaaa.github.io/mannaka-kanji/
-- 上の字＋まんなか・左の字＋まんなか・まんなか＋右の字・まんなか＋下の字が、どれも熟語になる字を札から選びます。答えは1つだけ。
+- 上の字＋まんなか・左の字＋まんなか・まんなか＋右の字・まんなか＋下の字が、どれも熟語になる漢字を1字、入力して答えます。答えは1つだけ。こまったらヒント（読み2つ、最後に候補4つ）。
 - まちがえると、4つのうちいくつ熟語になったかが分かります。時間制限はありません。
-- 今日の3問（やさしい・ふつう・むずかしい）はだれでも同じで1日1回。上級（むずかしい3問・札12枚・ヒントなし）、練習、集めた字が並ぶ漢字帳があります。
+- 今日の3問（やさしい・ふつう・むずかしい）はだれでも同じで1日1回。上級（むずかしい3問・ヒントも候補もなし）、練習、集めた字が並ぶ漢字帳があります。
 - 記録は遊ぶ人のブラウザにだけ残り、ゲームから自動で外へ送ることはありません。例外は2つ：文字（Google Fonts）を読み込むとき、まだ端末に保存が無ければ Google に IP アドレスが届きます。「Xで投稿」「LINEで送る」「結果をシェア」を押したときだけ、結果の文が選んだ先に渡ります（答えの字は入りません）。
 
 ## 開発
@@ -19,6 +19,6 @@ node qa/run.mjs         # 検査（CI と同じ）
 
 ## 出どころとライセンス
 
-熟語と読みは [JMdict](https://www.edrdg.org/jmdict/j_jmdict.html)（© Electronic Dictionary Research and Development Group）から作りました。JMdict は [CC BY-SA 4.0](https://www.edrdg.org/edrdg/licence.html) で、そこから作った `data.js` と `tools/words.txt` も CC BY-SA 4.0 です。
+熟語と読みは [JMdict](https://www.edrdg.org/jmdict/j_jmdict.html)（© Electronic Dictionary Research and Development Group）から作りました。JMdict は [CC BY-SA 4.0](https://www.edrdg.org/edrdg/licence.html) で、そこから作った `data.js`・`words.js`・`tools/words.txt` も CC BY-SA 4.0 です。
 
 感想は [Issue のフォーム](https://github.com/satou-aaaaa/mannaka-kanji/issues/new?template=feedback.yml) からどうぞ。

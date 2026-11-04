@@ -39,7 +39,6 @@ header{display:flex;justify-content:space-between;align-items:center;gap:8px;min
 h1{font-family:var(--f-disp);font-weight:800;font-size:22px;margin:0;letter-spacing:.1em}
 h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--ink2);margin-left:8px;font-weight:500}
 .icon{all:unset;cursor:pointer;font-size:18px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);box-sizing:border-box;padding:0 8px;background:var(--paper)}
-.icon:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--shu);outline-offset:2px}
 .dots{display:flex;gap:6px;flex:1;max-width:140px}
 .dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
 .dots i.on{background:var(--shu)}.dots i.done{background:var(--ink)}
@@ -126,7 +125,69 @@ dialog a{color:var(--shu2);min-height:44px;display:inline-flex;align-items:cente
 .hint{background:var(--paper);border:1px solid var(--shu);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
 footer{margin-top:auto;text-align:center;font-size:12px;color:var(--ink2);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:center}
+/* 手ごたえ：正解すると、4つの熟語が上・左・右・下の順に灯る。一発なら朱の印 */
+.board.lit .cell[data-pos] .k{animation:lit .5s ease-out both}
+.board.lit .cell[data-pos=t] .k{animation-delay:.15s}.board.lit .cell[data-pos=l] .k{animation-delay:.3s}
+.board.lit .cell[data-pos=r] .k{animation-delay:.45s}.board.lit .cell[data-pos=b] .k{animation-delay:.6s}
+@keyframes lit{0%{background:var(--tile)}45%{transform:scale(1.1);background:#dcefe4;border-color:var(--ok)}100%{background:#eef6f1;border-color:var(--ok)}}
+.board.lit .ar{animation:arr .4s ease-out both}
+.board.lit .ar.t{animation-delay:.15s}.board.lit .ar.l{animation-delay:.3s}.board.lit .ar.r{animation-delay:.45s}.board.lit .ar.b{animation-delay:.6s}
+@keyframes arr{0%{color:#b9ad9c}50%{transform:scale(1.5)}100%{color:var(--ok)}}
+.seal{display:inline-grid;place-items:center;width:46px;height:46px;border:2.5px solid var(--shu);border-radius:8px;color:var(--shu);font-family:var(--f-disp);font-size:15px;font-weight:800;line-height:1.05;transform:rotate(-10deg);animation:seal .45s .55s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes seal{from{transform:rotate(-10deg) scale(2.2);opacity:0}to{transform:rotate(-10deg) scale(1);opacity:1}}
+/* 入力して答える */
+.ansrow{display:flex;gap:8px}
+.ansrow input{flex:1;min-width:0;min-height:52px;box-sizing:border-box;border:1.5px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font-family:var(--f-disp);font-weight:800;font-size:24px;padding:0 12px;text-align:center}
+.ansrow input::placeholder{font-family:var(--f-body);font-weight:500;font-size:16px;color:#a99d8c}
+.ansrow input:focus{outline:2px solid var(--shu);outline-offset:1px}
+.ansrow button.main{flex:0 0 auto;min-width:88px}
+.cell.c .k.typing{opacity:.6}
+.tried{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.tried:empty{display:none}
+.chip{display:inline-flex;align-items:baseline;gap:3px;padding:3px 9px;border-radius:999px;background:var(--paper);border:1px solid var(--line);font-family:var(--f-disp);font-weight:800;font-size:18px}
+.chip s{text-decoration-color:var(--shu)}
+.chip small{font-family:var(--f-body);font-size:11px;color:var(--near);text-decoration:none}
+.tiles[hidden]{display:none}
+.tiles#cands{grid-template-columns:repeat(4,1fr)}
+.note.alt{color:var(--ok);font-weight:700}
+/* 実績・記録（カレンダー） */
+.achnew{background:#fff6e0;border:1px solid var(--near);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;margin:0;text-align:center}
+.achs{display:flex;flex-direction:column;gap:8px}
+.ach{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:34px 1fr auto;gap:2px 10px;align-items:center}
+.ach .ic{grid-row:span 2;font-size:24px;text-align:center;filter:grayscale(1);opacity:.4}
+.ach.got{border-color:var(--near);background:#fffaf0}
+.ach.got .ic{filter:none;opacity:1}
+.ach b{font-size:15px}
+.ach small{color:var(--ink2);font-size:12px;grid-column:2}
+.ach .kd{font-size:11px;color:var(--ink2);border:1px solid var(--line);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.ach .pg{grid-column:2/4;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2)}
+.ach .pg i{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden;display:block}
+.ach .pg i span{display:block;height:100%;background:var(--shu)}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calnav b{font-family:var(--f-disp);font-size:18px}
+.calnav .icon:disabled{opacity:.3;cursor:default}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wd{font-size:11px;color:var(--ink2);text-align:center}
+.cal .c{min-height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--ink2);background:var(--paper);border:1px solid var(--line);box-sizing:border-box;position:relative;line-height:1.1}
+.cal .c.e{background:none;border:none}
+.cal .c.out{opacity:.35}
+.cal .c i{font-style:normal;font-size:10px;letter-spacing:-.05em}
+.cal .c.d1{background:#c43d2b26;color:var(--ink)}.cal .c.d2{background:#c43d2b66;color:var(--ink)}.cal .c.d3{background:var(--shu);color:#fff;border-color:var(--shu2)}
+.cal .c.late{background:#c43d2b10;border:1.5px dashed var(--shu);color:var(--ink)}
+.cal .c.hd::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.cal .c.today{outline:2px solid var(--near);outline-offset:1px}
+.cal button.c{all:unset;box-sizing:border-box;cursor:pointer;min-height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;border:1.5px dashed var(--ink2);color:var(--ink);background:var(--paper);line-height:1.1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.legend em{display:inline-block;width:14px;height:14px;border-radius:4px}
+.misses{display:flex;flex-wrap:wrap;gap:8px}
+.misses button.sub{flex:1 1 30%;min-width:88px;flex-direction:column;gap:0;font-size:14px}
+.misses small{font-size:11px;color:var(--ink2);font-weight:500}
+.streak{font-size:12px;color:var(--ink2)}
+@media (max-width:360px){.row>.sub{font-size:14px;padding:0 6px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* all:unset のボタン（カレンダーのます目など）でも枠が消えないよう、いちばん最後に強く書く（2026-11-04 CodeRabbit） */
+:is(.icon,button,a):focus-visible{outline:2px solid var(--shu)!important;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -134,9 +195,10 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 <dialog id="howto" aria-labelledby="howto-t">
   <h2 id="howto-t">遊び方</h2>
   <ol>
-    <li>まんなかに入る漢字を、下の札から選びます。</li>
+    <li>まんなかに入る漢字を1字、入力欄に打って「決める」。</li>
     <li>矢印の向きに読むと、上下左右の4つが熟語になります。</li>
-    <li>答えは1つだけ。まちがえると、4つのうちいくつ熟語になったかが分かります。</li>
+    <li>まちがえると、4つのうちいくつ熟語になったかが分かります。何度でも打ち直せます。</li>
+    <li>こまったらヒント：読みを2つ、最後に候補を4つ（★が減ります）。</li>
   </ol>
   <p>例：上「史」・左「向」・右「昇」・下「位」なら、まんなかは「上」（史上・向上・上昇・上位）。</p>
   <p>今日の3問はだれでも同じで1日1回。時間制限はありません。熟語は JMdict（EDRDG）から選んでいます。</p>
@@ -144,6 +206,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
   <button class="main" id="howto-ok" style="width:100%">わかった</button>
 </dialog>
 <script src="data.js"></script>
+<script src="words.js"></script>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id), app = $("app");
@@ -171,20 +234,21 @@ const dailyList = (k) => [nth(0, dayIdx(k)), nth(1, dayIdx(k)), nth(2, dayIdx(k)
 const hardList = (k) => { const d = nth(2, dayIdx(k) * 4), out = []; for (let j = 1; out.length < 3; j++) { const x = nth(2, dayIdx(k) * 4 + j); if (x !== d && !out.includes(x)) out.push(x); } return out; }; // 1周の切れ目をまたぐ日は、前後の周で同じものが選ばれることがある。今日の最後の1問や、もう選んだものと重なったら次の番号から選ぶ
 // 札を並べる：答えと、まちがいの札（今日の3問は8枚・上級は11枚）。並びは問題ごとに決まる
 function tilesOf(p, n) { return shuffled([p.x, ...p.d.slice(0, n - 1)], rng(seedOf("tiles:" + p.id + ":" + n))); }
-const maskOf = (p, ch) => (ch === p.x ? 15 : p.m[p.d.indexOf(ch)] || 0);
+const maskOf = (p, ch) => (ch === p.x ? 15 : window.MK_WORDS ? dictMask(p, ch) : p.m[p.d.indexOf(ch)] || 0); // 打った字はどれでも辞書で確かめる（まちがいの札の印 m と同じ辞書）
 const bits = (m) => [1, 2, 4, 8].filter((b) => m & b).length;
 const starsOf = (m) => (m === 0 ? 3 : m === 1 ? 2 : 1); // m = まちがい＋ヒント
 const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
 
 // ---- 記録（この端末の localStorage だけ）----
 // 進行中の遊びはモードごとに分けて持つ（練習を始めても今日・上級の途中経過を消さない）
-const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
+const fresh = () => ({ v: 1, days: {}, hdays: {}, late: {}, dex: {}, runs: {}, tut: false, kofi: {} }); // late: あとから遊んだ日（今日の記録・連続には入れない）
 let MODE = "d";
 let mem = null; // 保存できない環境では、開いているあいだだけここに置く
 const doneOf = (r) => !!r && r.res.length >= r.list.length, recOf = (r) => ({ m: r.res.map((x) => x.m), g: r.res.map((x) => x.g), h: r.res.map((x) => x.h) });
 // 終わった今日・上級の回を日ごとの記録に入れる（結果を見る前に別のタブが次の日を保存しても、終えた日を失わない）
-function bank(s, r) { const b = doneOf(r) ? (r.mode === "d" ? s.days : r.mode === "h" ? s.hdays : null) : null; if (!b || b[r.date]) return false; b[r.date] = recOf(r); return true; }
-function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = r.mode === "d" ? s.days : r.mode === "h" ? s.hdays : null; if (bd && !bd[r.date]) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; bank(s, l); s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y), w = n.runs[m], l = w === x ? y : x; s.runs[m] = px > py ? x : py > px ? y : w.cur && l.cur && w.cur.i === l.cur.i ? Object.assign({}, w, { cur: Object.assign({}, w.cur, { tried: [...new Set([...(w.cur.tried || []), ...(l.cur.tried || [])])], hints: Math.max(w.cur.hints || 0, l.cur.hints || 0) }) }) : w; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
+const bookOf = (s, m) => (m === "d" ? s.days : m === "h" ? s.hdays : m === "a" ? (s.late = s.late || {}) : null);
+function bank(s, r) { const b = doneOf(r) ? bookOf(s, r.mode) : null; if (!b || b[r.date] || (r.mode === "a" && s.days[r.date])) return false; b[r.date] = recOf(r); return true; }
+function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); a = Object.assign(fresh(), a); b = Object.assign(fresh(), b); /* 統合の前に両方を補う（片方にしか無いキー＝あとで足した late・ach などを失わない） */ const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (y === undefined && x && typeof x === "object") { s[k] = x; continue; } if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = bookOf(s, r.mode); if (bd && !bd[r.date] && !(r.mode === "a" && s.days[r.date])) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; bank(s, l); s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y), w = n.runs[m], l = w === x ? y : x; s.runs[m] = px > py ? x : py > px ? y : w.cur && l.cur && w.cur.i === l.cur.i ? Object.assign({}, w, { cur: Object.assign({}, w.cur, { tried: [...new Set([...(w.cur.tried || []), ...(l.cur.tried || [])])], hints: Math.max(w.cur.hints || 0, l.cur.hints || 0) }) }) : w; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
 // 保存の前に読み直す（別のタブで進めた記録を消さない）
 function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 const prevDay = (k) => new Date(Date.parse(k) - 864e5).toISOString().slice(0, 10);
@@ -192,6 +256,40 @@ function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k);
 const RANKS = [[0, "手習い"], [10, "読み手"], [50, "物知り"], [150, "漢字博士"], [400, "生き字引"]];
 const rankOf = (n) => RANKS.filter((r) => n >= r[0]).pop()[1];
 const nextRank = (n) => RANKS.find((r) => r[0] > n);
+
+// ---- 記録（カレンダー）・あとから遊ぶ・実績（どれもいまの記録から毎回数える）----
+const addDay = (k, n) => new Date(Date.parse(k) + n * 864e5).toISOString().slice(0, 10);
+const LATE_DAYS = 7;
+// 取りこぼした日：今日より前の7日のうち、今日の3問をまだ遊んでいない日（はじめの日 EPOCH より前は無い）
+function missedDays(s, k = todayKey()) { const out = []; for (let i = 1; i <= LATE_DAYS; i++) { const d = addDay(k, -i); if (d < EPOCH) break; if (!s.days[d] && !(s.late || {})[d]) out.push(d); } return out; }
+const aKey = (d) => "a:" + d; // あとから遊ぶ回の途中経過は、日付ごとに runs["a:日付"] へ分けて置く（別の日を始めても前の日の途中を消さない）
+const aRuns = (s) => Object.keys(s.runs || {}).filter((m) => m.startsWith("a:") && s.runs[m]);
+const dayStars = (rec) => rec.m.reduce((a, m) => a + starsOf(m), 0);
+const dayRecs = (s) => [...Object.values(s.days), ...Object.values(s.late || {})].filter((r) => r && Array.isArray(r.m));
+const playedDays = (s) => [...new Set([...Object.keys(s.days), ...Object.keys(s.late || {})])].sort(); // 今日の3問を終えた日（あとからも入れる）
+function maxRun(keys) { let best = 0, n = 0, prev = null; for (const k of keys) { n = prev && addDay(prev, 1) === k ? n + 1 : 1; best = Math.max(best, n); prev = k; } return best; }
+const XT = Object.fromEntries(P.map((p) => [p.x, p.t])); // 字 → 難しさ
+// 実績：[id, 名前, 条件, 種類, (記録) => [いまの数, 目標]]。腕前・集める・続けるを混ぜる。続けるは連続でなく合計で数える
+const ACH = [
+  ["first", "はじめの一字", "1問とく", "腕前", (s) => [Math.min(Object.keys(s.dex).length, 1), 1]],
+  ["perfect", "一発の三問", "1日の3問を全部一発で", "腕前", (s) => [dayRecs(s).some((r) => r.m.length === 3 && r.m.every((m) => m === 0)) ? 1 : 0, 1]],
+  ["hard1", "上級に挑む", "上級を終える", "腕前", (s) => [Math.min(Object.keys(s.hdays).length, 1), 1]],
+  ["hardp", "上級を一発で", "上級の3問を全部一発で", "腕前", (s) => [Object.values(s.hdays).some((r) => r && r.m && r.m.every((m) => m === 0)) ? 1 : 0, 1]],
+  ["s3", "★3の字 50", "★3でといた字を50", "腕前", (s) => [Object.values(s.dex).filter((x) => x >= 3).length, 50]],
+  ["dex50", "漢字帳 50字", "漢字帳を50字", "集める", (s) => [Object.keys(s.dex).length, 50]],
+  ["dex200", "漢字帳 200字", "漢字帳を200字", "集める", (s) => [Object.keys(s.dex).length, 200]],
+  ["hardx", "むずかしい字 30", "むずかしいの字を30", "集める", (s) => [Object.keys(s.dex).filter((x) => XT[x] === 2).length, 30]],
+  ["week", "1週間そろえる", "記録を7日続けて埋める（あとからも可）", "集める", (s) => [maxRun(playedDays(s)), 7]],
+  ["late1", "取りこぼし回収", "取りこぼした日をあとからとく", "続ける", (s) => [Math.min(Object.keys(s.late || {}).length, 1), 1]],
+  ["days3", "3日とく", "1日の3問を合わせて3日", "続ける", (s) => [playedDays(s).length, 3]],
+  ["days10", "10日とく", "1日の3問を合わせて10日", "続ける", (s) => [playedDays(s).length, 10]],
+  ["days30", "30日とく", "1日の3問を合わせて30日", "続ける", (s) => [playedDays(s).length, 30]],
+];
+const achProg = (s, a) => { try { const [n, g] = a[4](s); return [Math.min(n, g), g]; } catch (e) { return [0, 1]; } };
+const achGot = (s) => ACH.filter((a) => { const [n, g] = achProg(s, a); return n >= g; }).map((a) => a[0]);
+// 新しく取れた実績を「見せた」印（ach）に入れて返す（save の中で呼ぶ）
+function claimAch(s) { s.ach = s.ach || {}; const n = achGot(s).filter((id) => !s.ach[id]); n.forEach((id) => (s.ach[id] = 1)); return n; }
+const achLine = (ids) => (ids && ids.length ? `<p class="achnew" role="status">🏅 実績：${ids.map((id) => ACH.find((a) => a[0] === id)[1]).join("・")}</p>` : "");
 
 // ---- 画面 ----
 const md = (k) => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
@@ -220,8 +318,9 @@ function boardHtml(p, center, opt = {}) {
 function home() {
   const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
   // 最後の1問を終えて結果を見る前に閉じた日は、開き直したら結果へ進める（記録をつける）
-  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
-  const n = Object.keys(s.dex).length, nr = nextRank(n);
+  for (const m of ["d", "h", ...aRuns(s)]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
+  if (!s.ach) save((s2) => { if (!s2.ach) { s2.ach = {}; achGot(s2).forEach((id) => (s2.ach[id] = 1)); } }); // 実績の前から遊んでいた人に、もう取れている分をまとめて出さない
+  const n = Object.keys(s.dex).length, nr = nextRank(n), st = streak(s.days), miss = missedDays(s, k);
   const rd = s.runs.d && s.runs.d.date === k ? s.runs.d : null, rh = s.runs.h && s.runs.h.date === k ? s.runs.h : null;
   app.innerHTML = `
     <div class="hero" aria-hidden="true">${boardHtml(P[0], "")}</div>
@@ -229,15 +328,19 @@ function home() {
     <p class="lead">まんなかに1文字入れて、4つの熟語を完成させる。<br>だれでも同じ1日3問。</p>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m, i) => `${LV[i]} ${"★".repeat(starsOf(m))}`).join("　")}</div>` : ""}
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${LV[rd.res.length]}）` : `今日の3問をとく <small>#${dayNo(k)}</small>`}</button>
-    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（札12枚・ヒントなし）"}</button>` : ""}
+    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（ヒント・候補なし）"}</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">漢字帳 ${n}/${P.length}</button></div>
-    <div class="stats"><div><b>${streak(s.days)}</b><small>連続の日</small></div><div><b>${Object.keys(s.days).length}</b><small>といた日</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の字</small></div></div>
-    <p class="rank">称号：${rankOf(n)}${nr ? `（あと${nr[0] - n}字で${nr[1]}）` : ""}</p>
+    ${miss.length ? `<button class="sub" id="go-late">↺ 取りこぼした日をあとから（${miss.length}日）</button>` : ""}
+    <div class="stats"><div><b>${playedDays(s).length}</b><small>といた日</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の字</small></div><div><b>${achGot(s).length}</b><small>実績</small></div></div>
+    <p class="rank">称号：${rankOf(n)}${nr ? `（あと${nr[0] - n}字で${nr[1]}）` : ""}${st >= 1 ? `<br><span class="streak">連続${st}日</span>` : ""}</p>
+    <div class="row"><button class="sub" id="go-ach">🏅 実績 ${achGot(s).length}/${ACH.length}</button><button class="sub" id="go-cal">📅 記録</button></div>
     ${footer()}`;
   $("go-d").onclick = () => (k !== todayKey() ? home() : done ? result("d", k) : startRun("d")); // 画面を開いたまま0時を過ぎたら、今日の状態に描き直す
   if ($("go-h")) $("go-h").onclick = () => (hdone ? result("h", k) : k === todayKey() ? startRun("h") : home()); // 画面を開いたまま0時を過ぎたら、翌日の上級は始めない
   $("go-p").onclick = practiceMenu;
   $("go-dex").onclick = () => dex();
+  $("go-ach").onclick = achView; $("go-cal").onclick = () => calView();
+  if ($("go-late")) $("go-late").onclick = () => calView();
   bindFooter();
   if (!s.tut) openHow();
 }
@@ -251,6 +354,11 @@ function practiceMenu() {
 }
 function startRun(mode, opt) {
   const k = todayKey();
+  if (mode === "a") { // あとから：遊んでいない過去7日だけ。その日の3問と同じ問題（日付の種）。途中経過は日付ごとに runs["a:日付"]
+    const d = opt; if (!missedDays(load(), k).includes(d)) return calView();
+    save((s) => { const m = aKey(d); if (s.runs[m] && s.runs[m].date === d) return; s.runs[m] = { mode: "a", date: d, list: dailyList(d), res: [], cur: null }; });
+    MODE = aKey(d); return play();
+  }
   save((s) => {
     if (mode !== "p" && s.runs[mode] && s.runs[mode].date === k) return; // 続きから
     if ((mode === "d" && s.days[k]) || (mode === "h" && s.hdays[k])) return; // 別のタブで今日の分を終えていたら、もう一度は始めない（ホームに戻る）
@@ -265,57 +373,89 @@ function startRun(mode, opt) {
   play();
 }
 
-let cur = null; // 今の問題：{ i, date, p, tried:[選んだ札], hints }
+let cur = null; // 今の問題：{ i, date, p, tried:[打ってまちがえた字], hints }
+// ---- 入力して答える：打った文字を整えて、まんなかの1字を取り出す ----
+// 前後の空白を消して NFKC（全角・半角のゆれをそろえる）。漢字が無ければ（かなだけなど）null。盤の字は除き、熟語ごと打っても（例「上昇」）まんなかの字を見る
+function pickKanji(raw, p) {
+  const t = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+  const ks = [...t].filter((c) => /\p{Script=Han}/u.test(c) && c !== "々");
+  if (!ks.length) return { kana: t.length > 0 };
+  const board = new Set([p.w[0][0], p.w[1][0], p.w[2][1], p.w[3][1]]), rest = ks.filter((c) => !board.has(c));
+  return { ch: rest[0] || ks[0] };
+}
+const MW = window.MK_WORDS || { F: {}, B: {} };
+// 打った字で4つのうちどれが熟語になるか（辞書 JMdict の2字の語）。答えは 15
+const dictMask = (p, y) => ((MW.F[p.w[0][0]] || "").includes(y) ? 1 : 0) | ((MW.F[p.w[1][0]] || "").includes(y) ? 2 : 0) | ((MW.B[p.w[2][1]] || "").includes(y) ? 4 : 0) | ((MW.B[p.w[3][1]] || "").includes(y) ? 8 : 0);
+const wordsOf = (p, y) => [p.w[0][0] + y, p.w[1][0] + y, y + p.w[2][1], y + p.w[3][1]];
+const MAXH = (mode) => (mode === "h" ? 0 : 3); // ヒント：読み2つ → 最後に候補を4つから選ぶ（上級はヒントも候補もなし）
 function play() {
   const s = load(), run = s.runs[MODE];
   if (!run) return home();
   const i = run.res.length;
   if (i >= run.list.length) return finish();
-  const p = P[run.list[i]], hard = run.mode === "h", nT = hard ? 12 : 9;
-  // 途中で閉じても、選んだ札とヒントはそのまま
+  const p = P[run.list[i]], hard = run.mode === "h";
+  // 途中で閉じても、打った字とヒントはそのまま
   const saved = run.cur && run.cur.i === i ? run.cur : { tried: [], hints: 0 };
-  cur = { i, date: run.date, p, tried: saved.tried.slice(), hints: saved.hints, done: false };
-  const label = run.mode === "d" ? LV[p.t] : run.mode === "h" ? "上級" : `練習・${LV[p.t]}`;
+  cur = { i, date: run.date, p, tried: saved.tried.slice(), hints: saved.hints, done: false, hard };
+  const label = run.mode === "d" ? LV[p.t] : run.mode === "a" ? `${md(run.date)} ${LV[p.t]}` : run.mode === "h" ? "上級" : `練習・${LV[p.t]}`;
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
       <div class="dots" aria-label="${i + 1}問目／${run.list.length}問">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>
       <span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}/${run.list.length}</span></header>
     <div id="bd">${boardHtml(p, "")}</div>
-    <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
+    <div class="ansrow" id="inp"><input id="ans" type="text" lang="ja" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="12" placeholder="まんなかの漢字" aria-label="まんなかに入る漢字"><button class="main" id="go" type="button">決める</button></div>
     <div id="near"></div>
-    <div class="tiles${nT === 12 ? " n12" : ""}" id="tiles">${tilesOf(p, nT).map((ch) => `<button class="tile" data-ch="${ch}" aria-label="${ch}">${ch}</button>`).join("")}</div>
+    <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
+    <div class="tried" id="tried"></div>
+    <div class="tiles" id="cands" hidden></div>
     <div id="after"></div>
-    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる字を選びます。</p>` : ""}`;
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる漢字を1字打ちます。</p>` : ""}`;
   $("back").onclick = home;
-  document.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch)));
+  const ans = $("ans");
+  // 変換中の Enter では送らない（IME の確定に使う。isComposing と keyCode 229 の両方を見る）
+  ans.addEventListener("keydown", (e) => { if (e.key !== "Enter") return; if (e.isComposing || e.keyCode === 229) return; e.preventDefault(); submit(); });
+  ans.addEventListener("input", () => { if (cur.done) return; if (document.querySelector("#bd .mk")) $("bd").innerHTML = boardHtml(p, "", { yomi: cur.hints ? p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) : null }); /* 打ち直し始めたら、前の字の ○× は消す */ const k = pickKanji(ans.value, p), c = $("ctr"); if (c) { c.textContent = k.ch || "？"; c.classList.toggle("fill", !!k.ch); c.classList.toggle("typing", !!k.ch); } });
+  $("go").onclick = submit;
   if ($("hint")) $("hint").onclick = hint;
   paintTried(true);
   window.scrollTo(0, 0);
+}
+function submit() {
+  if (!cur || cur.done) return;
+  const ans = $("ans"), k = pickKanji(ans.value, cur.p);
+  if (!k.ch) { $("near").innerHTML = `<div class="near">${k.kana ? "漢字に変換してから決めてください（まちがいには数えません）" : "まんなかに入る漢字を1字打ってください"}</div>`; ans.focus(); return; }
+  if (cur.tried.includes(k.ch)) { $("near").innerHTML = `<div class="near">「<b>${esc(k.ch)}</b>」はもう試しました</div>`; ans.select(); return; }
+  ans.value = "";
+  guess(k.ch);
 }
 function keep() { save((s) => { const r = s.runs[MODE]; if (same(r)) r.cur = { i: cur.i, tried: cur.tried.slice(), hints: cur.hints }; }); }
 const same = (r) => r && cur && r.date === cur.date && r.res.length === cur.i && r.list[cur.i] === cur.p.id; // 保存した進み具合が、この画面と同じ問題か
 function paintTried(repaint) { // repaint：ヒントを出したとき・開き直したときだけ盤を描き直す（まちがえた直後の ○× を消さない）
   const p = cur.p;
-  cur.tried.forEach((ch) => { const b = document.querySelector(`.tile[data-ch="${ch}"]`); if (b) { b.classList.add("out"); b.disabled = true; const m = bits(maskOf(p, ch)); b.innerHTML = `${ch}<small>${m}/4</small>`; } });
+  $("tried").innerHTML = cur.tried.map((ch) => `<span class="chip"><s>${esc(ch)}</s><small>${bits(maskOf(p, ch))}/4</small></span>`).join("");
   const miss = cur.tried.length;
   $("miss").textContent = miss || cur.hints ? `まちがい ${miss}${cur.hints ? `・ヒント ${cur.hints}` : ""}` : "";
-  if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < cur.hints ? r : "")) }); }
-  if ($("hint")) $("hint").disabled = cur.hints >= 2 || cur.done;
+  if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) }); }
+  // 最後のヒント：候補を4つ（答えと、まちがいの札3枚。並びは問題ごとに決まる）。上級は出さない
+  const cd = $("cands");
+  if (!cur.hard && cur.hints >= 3 && !cur.done) { cd.hidden = false; cd.innerHTML = tilesOf(p, 4).map((ch) => `<button class="tile${cur.tried.includes(ch) ? " out" : ""}" data-ch="${ch}" aria-label="${ch}"${cur.tried.includes(ch) ? " disabled" : ""}>${ch}${cur.tried.includes(ch) ? `<small>${bits(maskOf(p, ch))}/4</small>` : ""}</button>`).join(""); cd.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch))); }
+  else cd.hidden = true;
+  const h = $("hint"); if (h) { h.disabled = cur.hints >= MAXH(cur.hard ? "h" : "d") || cur.done; h.textContent = cur.hints >= 2 ? "候補から選ぶ" : "ヒント（読み）"; }
 }
 function hint() {
-  if (cur.done || cur.hints >= 2) return;
+  if (cur.done || cur.hard || cur.hints >= 3) return;
   cur.hints++; keep(); paintTried(true);
-  toast(cur.hints === 1 ? "上の熟語の読みを出しました" : "左の熟語の読みも出しました");
+  toast(cur.hints === 1 ? "上の熟語の読みを出しました" : cur.hints === 2 ? "左の熟語の読みも出しました" : "候補を4つ出しました");
 }
 function guess(ch) {
   if (cur.done || cur.tried.includes(ch)) return;
-  const p = cur.p;
-  if (ch !== p.x) {
-    const m = maskOf(p, ch), n = bits(m);
+  const p = cur.p, m0 = maskOf(p, ch), alt = ch !== p.x && m0 === 15; // 別解：ほかの字でも4つとも辞書の熟語になる
+  if (ch !== p.x && !alt) {
+    const m = m0, n = bits(m);
     cur.tried.push(ch); keep(); buzz(30);
-    $("bd").innerHTML = boardHtml(p, ch, { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < cur.hints ? r : "")) : null });
+    $("bd").innerHTML = boardHtml(p, esc(ch), { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) : null });
     $("ctr").classList.add("bad");
-    $("near").innerHTML = `<div class="near">「<b>${ch}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
+    $("near").innerHTML = `<div class="near">「<b>${esc(ch)}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
     paintTried();
     setTimeout(() => { if ($("ctr") && !cur.done) $("ctr").classList.remove("bad"); }, 450);
     return;
@@ -325,19 +465,24 @@ function guess(ch) {
   cur.done = true; buzz([10, 40, 10]);
   { const r0 = load().runs[MODE]; if (r0 && r0.cur && r0.cur.i === cur.i) { for (const c of r0.cur.tried || []) if (!cur.tried.includes(c)) cur.tried.push(c); cur.hints = Math.max(cur.hints, r0.cur.hints || 0); } } // 別のタブで同じ問題をまちがえた・ヒントを見た分も数える
   const mistakes = cur.tried.length + cur.hints, st = starsOf(mistakes);
-  let saved = false;
-  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; saved = true; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); });
+  let saved = false, newA = [];
+  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; saved = true; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); newA = claimAch(s); });
   if (!saved) { toast("別の画面で先に進んでいます"); return play(); }
-  document.querySelectorAll(".tile").forEach((b) => (b.disabled = true));
-  $("bd").innerHTML = boardHtml(p, p.x, { win: true, mask: 15, yomi: p.r });
-  $("near").innerHTML = "";
+  if ($("hint")) $("hint").disabled = true;
+  const ws = alt ? wordsOf(p, ch) : p.w;
+  $("bd").innerHTML = boardHtml(p, esc(ch), { win: true, mask: 15, yomi: alt ? null : p.r });
+  $("bd").firstElementChild.classList.add("lit"); // 4つの熟語が順に灯る
+  $("near").innerHTML = ""; document.querySelectorAll(".hint").forEach((e) => e.remove());
   const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
   $("after").innerHTML = `<div class="verdict" role="status">
-    <div class="hd">「${p.x}」${starStr(st)}</div>
-    <div class="words">${p.w.map((w, j) => `<div><b>${w}</b><span>${p.r[j]}</span></div>`).join("")}</div>
+    <div class="hd">「${esc(ch)}」${starStr(st)}${mistakes === 0 ? `<span class="seal" aria-label="一発">一発</span>` : ""}</div>
+    ${alt ? `<p class="note alt">別解。用意した答えは「${p.x}」（${p.w.join("・")}）</p>` : ""}
+    <div class="words">${ws.map((w, j) => `<div><b>${w}</b><span>${alt ? "" : p.r[j]}</span></div>`).join("")}</div>
     <p class="note">${mistakes === 0 ? "一発で正解。" : `まちがい${cur.tried.length}回${cur.hints ? `・ヒント${cur.hints}回` : ""}`}</p>
+    ${achLine(newA)}
     <button class="main" id="next">${last ? "結果を見る" : "次の問題へ"}</button></div>`;
-  $("tiles").style.display = "none";
+  $("inp").style.display = "none"; $("cands").hidden = true;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   $("next").onclick = play;
   setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
 }
@@ -345,34 +490,35 @@ function guess(ch) {
 function finish() {
   const s = load(), run = s.runs[MODE];
   if (!run) return home();
-  let first = false;
+  let first = false, newA = [];
   const rec = { m: run.res.map((r) => r.m), g: run.res.map((r) => r.g), h: run.res.map((r) => r.h) };
   save((s2) => {
-    first = bank(s2, run);
+    first = bank(s2, run); newA = claimAch(s2);
     // 別のタブで同じモードの新しい回が始まっていたら、それは消さない
     const c = s2.runs[MODE]; if (c && c.date === run.date && c.id === run.id) s2.runs[MODE] = null;
   });
-  if (run.mode === "p") return result("p", run.date, false, { list: run.list, ...rec });
-  result(run.mode, run.date, first);
+  if (run.mode === "p") return result("p", run.date, false, { list: run.list, ...rec, newA });
+  result(run.mode, run.date, first, { newA });
 }
 // 共有の文：答えの字・熟語は出さない。まちがいは「何個熟語になったか」の色だけ
 const sq = (n) => (n >= 2 ? "🟨" : "⬜");
 function shareText(mode, k, rec) {
   const names = mode === "h" ? ["1", "2", "3"] : LV;
-  return `まんなか漢字${mode === "h" ? " 上級" : ""} #${dayNo(k)} ${md(k)}\n${rec.m.map((m, i) => `${names[i]} ${(rec.g[i] || []).map(sq).join("")}${"💡".repeat(rec.h[i] || 0)}🟩`).join("\n")}`;
+  return `まんなか漢字${mode === "h" ? " 上級" : ""} #${dayNo(k)} ${md(k)}${mode === "a" ? "（あとから）" : ""}\n${rec.m.map((m, i) => `${names[i]} ${(rec.g[i] || []).map(sq).join("")}${"💡".repeat(rec.h[i] || 0)}🟩`).join("\n")}`;
 }
 function untilNext() { const n = jstNow(), ms = 864e5 - (n.getTime() % 864e5); return `${Math.floor(ms / 36e5)}時間${Math.floor((ms % 36e5) / 6e4)}分`; }
 function result(mode, k, first, prec) {
   const s = load();
-  const list = mode === "p" ? prec.list : mode === "d" ? dailyList(k) : hardList(k);
-  const rec = mode === "p" ? prec : (mode === "d" ? s.days : s.hdays)[k];
+  const list = mode === "p" ? prec.list : mode === "h" ? hardList(k) : dailyList(k);
+  const rec = mode === "p" ? prec : bookOf(s, mode)[k], newA = prec && prec.newA;
   if (!rec) return home();
   const total = rec.m.reduce((a, b) => a + b, 0), text = shareText(mode, k, rec);
-  const showKofi = first && mode !== "p" && total === 0 && !s.kofi[k + mode];
+  const showKofi = first && (mode === "d" || mode === "h") && total === 0 && !s.kofi[k + mode];
   if (showKofi) save((s2) => { s2.kofi[k + mode] = 1; });
   app.innerHTML = `
-    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>まんなか漢字<small>${mode === "d" ? `今日の3問 #${dayNo(k)}` : mode === "h" ? "上級" : "練習"}</small></h1><span></span></header>
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>まんなか漢字<small>${mode === "d" ? `今日の3問 #${dayNo(k)}` : mode === "a" ? `#${dayNo(k)} あとから` : mode === "h" ? "上級" : "練習"}</small></h1><span></span></header>
     <p class="big">${total === 0 ? "全問一発！" : `まちがい・ヒント ${total}`}</p>
+    ${achLine(newA)}
     <div class="rlist">${list.map((id, j) => { const p = P[id]; return `<div><span class="x">${p.x}</span><span class="w"><b>${p.w.join("・")}</b><br>${starStr(starsOf(rec.m[j]))} ${mode === "h" ? "むずかしい" : LV[p.t]}</span></div>`; }).join("")}</div>
     ${mode !== "p" ? `<div class="share">${esc(text)}</div>
     <button class="main" id="share">結果をシェア</button>
@@ -380,11 +526,13 @@ function result(mode, k, first, prec) {
     <p class="note">🟩正解　🟨2つ以上熟語になった字　⬜1つ以下　💡ヒント<br>次の3問まで あと <b>${untilNext()}</b></p>` : ""}
     ${mode === "d" && k === todayKey() && !s.hdays[k] ? `<button class="main alt" id="go-h">上級：むずかしい3問に挑む</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習する</button><button class="sub" id="go-dex">漢字帳を見る</button></div>
+    <div class="row"><button class="sub" id="go-ach">🏅 実績</button><button class="sub" id="go-cal">📅 記録</button></div>
     ${showKofi ? `<p class="note kofi">楽しめたら、<a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi でコーヒー1杯の応援</a>をもらえると、新しい問題とゲームづくりの励みになります（任意・遊ぶのはずっと無料）。</p>` : ""}
     <p class="note"><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a></p>`;
   $("back").onclick = home;
   $("go-p").onclick = practiceMenu;
   $("go-dex").onclick = () => dex();
+  $("go-ach").onclick = achView; $("go-cal").onclick = () => calView();
   if ($("go-h")) $("go-h").onclick = () => (k === todayKey() ? startRun("h") : home()); // 画面を開いたまま0時を過ぎたら、翌日の上級は始めない
   if (mode !== "p") {
     const withUrl = text + "\n" + SITE;
@@ -411,7 +559,43 @@ function dex(sel) {
   bindFooter();
 }
 
-window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); } };
+// ---- 実績 ----
+function achView() {
+  const s = load(), got = achGot(s);
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>実績<small>${got.length}/${ACH.length}</small></h1><span></span></header>
+    <div class="achs">${ACH.map((a) => { const [n, g] = achProg(s, a), ok = n >= g; return `<div class="ach${ok ? " got" : ""}" data-id="${a[0]}"><span class="ic">🏅</span><b>${a[1]}</b><span class="kd">${a[3]}</span><small>${a[2]}</small>${ok ? "" : `<span class="pg"><i><span style="width:${Math.round(n / g * 100)}%"></span></i>${n}/${g}</span>`}</div>`; }).join("")}</div>
+    ${footer()}`;
+  $("back").onclick = home; bindFooter(); window.scrollTo(0, 0);
+}
+// ---- 記録（その月のカレンダー）。濃い朱ほど★が多い日、点線はあとからといた日、黒い点は上級 ----
+function calView(ym) {
+  const s = load(), k = todayKey(), cm = k.slice(0, 7), min = EPOCH.slice(0, 7); ym = ym || cm;
+  const [Y, Mo] = ym.split("-").map(Number), dow = new Date(Date.UTC(Y, Mo - 1, 1)).getUTCDay(), dim = new Date(Date.UTC(Y, Mo, 0)).getUTCDate();
+  const miss = missedDays(s, k), late = s.late || {}, st = streak(s.days), going = (d) => !!s.runs[aKey(d)];
+  const shift = (n) => new Date(Date.UTC(Y, Mo - 1 + n, 1)).toISOString().slice(0, 7);
+  let cells = "日月火水木金土".split("").map((w) => `<div class="wd">${w}</div>`).join("") + `<div class="c e"></div>`.repeat(dow), inMonth = 0;
+  for (let d = 1; d <= dim; d++) {
+    const key = `${ym}-${String(d).padStart(2, "0")}`, rec = s.days[key], lr = late[key], ex = (s.hdays[key] ? " hd" : "") + (key === k ? " today" : "");
+    if (rec) { inMonth++; const n = dayStars(rec); cells += `<div class="c d${n >= 9 ? 3 : n >= 7 ? 2 : 1}${ex}" data-k="${key}" title="${md(key)} ★${n}">${d}<i>★${n}</i></div>`; }
+    else if (lr) { inMonth++; cells += `<div class="c late${ex}" data-k="${key}" title="${md(key)} あとから ★${dayStars(lr)}">${d}<i>↺★${dayStars(lr)}</i></div>`; }
+    else if (miss.includes(key)) cells += `<button class="c" data-d="${key}" aria-label="${md(key)}の3問をあとから">${d}<i>${going(key) ? "続き" : "↺とく"}</i></button>`;
+    else cells += `<div class="c${key > k || key < EPOCH ? " out" : ""}${ex}">${d}</div>`;
+  }
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>記録<small>${inMonth ? `この月 ${inMonth}日` : ""}</small></h1><span></span></header>
+    <div class="calnav"><button class="icon" id="cal-prev" aria-label="前の月"${ym <= min ? " disabled" : ""}>‹</button><b id="cal-ym">${Y}年${Mo}月</b><button class="icon" id="cal-next" aria-label="次の月"${ym >= cm ? " disabled" : ""}>›</button></div>
+    <div class="cal">${cells}</div>
+    <div class="legend"><span><em style="background:var(--shu)"></em>その日にといた（濃いほど★）</span><span><em style="border:1.5px dashed var(--shu)"></em>あとから</span><span><em style="background:var(--ink);border-radius:50%;width:8px;height:8px"></em>上級</span></div>
+    ${st >= 1 ? `<p class="note" id="cal-streak">いま 連続${st}日</p>` : ""}
+    ${miss.length ? `<p class="note">取りこぼした日は、7日前まであとからとけます（同じ3問・連続の日には入りません）</p><div class="misses">${miss.map((d) => `<button class="sub" data-d="${d}">${md(d)}<small>#${dayNo(d)}${going(d) ? "・続き" : ""}</small></button>`).join("")}</div>` : ""}
+    ${footer()}`;
+  $("back").onclick = home;
+  if (ym > min) $("cal-prev").onclick = () => calView(shift(-1));
+  if (ym < cm) $("cal-next").onclick = () => calView(shift(1));
+  document.querySelectorAll("[data-d]").forEach((b) => (b.onclick = () => startRun("a", b.dataset.d)));
+  bindFooter(); window.scrollTo(0, 0);
+}
+
+window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
