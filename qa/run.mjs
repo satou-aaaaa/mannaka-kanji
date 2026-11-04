@@ -46,6 +46,7 @@ check("画面にお笑いの言葉を入れない（本物っぽく）", !/お�
 { const sw = readFileSync(path.join(root, "sw.js"), "utf8"), mf = JSON.parse(readFileSync(path.join(root, "manifest.webmanifest"), "utf8"));
   const shell = JSON.parse(sw.match(/SHELL = (\[[^\]]+\])/)[1].replace(/'/g, '"'));
   const need = ["./index.html", "./data.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+  check("PWA：ネットの返事の保存は、イベントの中で waitUntil に預ける（遅れて届いた新しい版も保存できる）", /e\.waitUntil\(net\.then/.test(sw) && !/\.then\([^\n]*e\.waitUntil/.test(sw));
   check("PWA：sw.js は画面のファイルを全部保存し、外へ何も送らない", need.every((f) => shell.includes(f)) && !/https?:\/\//.test(sw.replace(/^\/\/.*$/gm, "")));
   check("PWA：manifest にアイコン2つと名前がある", mf.name === "まんなか漢字" && mf.icons.length >= 2 && mf.start_url === "./"); }
 { // 同じ日はどのブラウザでも同じ問題：sort の比較の中で乱数を引かない（引く回数がブラウザで変わる）
@@ -143,13 +144,14 @@ try {
   check("2回目に結果を開いても Ko-fi のひとことは出ない", (await page.locator(".kofi").count()) === 0);
   await page.click("#back");
   // 練習：記録の日を増やさず、漢字帳には載る
-  const n0 = await page.evaluate(() => Object.keys(window.__mk.load().dex).length);
+  // 期待値を練習の乱数に頼らない：遊んだ字が今日の問題と重なることがあるので、数でなく「遊んだ字が載ったか」を見る
   await page.click("#go-p"); await page.locator(".lv button").nth(1).click();
-  for (let j = 0; j < 3; j++) { p = await curP(page); await page.click(`.tile[data-ch="${p.x}"]`); await page.click("#next"); }
-  const after = await page.evaluate(() => { const s = window.__mk.load(); return { days: Object.keys(s.days).length, dex: Object.keys(s.dex).length }; });
-  check("練習は今日の記録を増やさず、漢字帳には載る", after.days === 1 && after.dex === n0 + 3 && (await page.locator(".share").count()) === 0);
+  const played = [];
+  for (let j = 0; j < 3; j++) { p = await curP(page); played.push(p.x); await page.click(`.tile[data-ch="${p.x}"]`); await page.click("#next"); }
+  const after = await page.evaluate(() => { const s = window.__mk.load(); return { days: Object.keys(s.days).length, dex: s.dex }; });
+  check("練習は今日の記録を増やさず、漢字帳には載る", after.days === 1 && played.every((x) => after.dex[x] >= 1) && (await page.locator(".share").count()) === 0, played.join(""));
   await page.click("#go-dex");
-  check("漢字帳に集めた字が出て、押すと熟語と読みが見られる", (await page.locator(".dex button").count()) === after.dex);
+  check("漢字帳に集めた字が出て、押すと熟語と読みが見られる", (await page.locator(".dex button").count()) === Object.keys(after.dex).length);
   await page.locator(".dex button").first().click();
   check("漢字帳の字を押すと盤と4つの熟語", (await page.locator(".sheet .words div").count()) === 4);
   await page.close();
@@ -172,12 +174,25 @@ try {
     await pb.click("#back");
     check("保存できないブラウザでも、遊び方が何度も開かない", !(await pb.locator("#howto[open]").count()));
     await pb.close(); }
+  { // 前の記録が残っていて、書き込みだけ失敗する（容量いっぱいなど）ときも、メモリの新しい進み具合を使う
+    const pq = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    pq.on("pageerror", (e) => errors.push(e.message));
+    await pq.addInitScript(() => { const orig = Storage.prototype.setItem; orig.call(localStorage, "mannaka-v1", JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, kofi: {}, runs: {} })); Storage.prototype.setItem = () => { throw new Error("full"); }; });
+    await pq.goto(url); await pq.click("#go-d");
+    check("前の記録があり書き込みだけ失敗しても、今日の1問目が始まる", (await pq.textContent("header")).includes("1/3"));
+    await pq.close(); }
   { // 最後の1問を終えて「結果を見る」を押す前に閉じた日は、開き直すと結果へ進み記録がつく
     const pc = await newPage();
     await pc.evaluate((k) => { const g = window.__mk, d = g.todayKey(); localStorage.setItem(k, JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, kofi: {}, runs: { d: { mode: "d", date: d, list: g.dailyList(d), res: [0, 1, 2].map(() => ({ m: 0, g: [], h: 0 })) } } })); }, KEY);
     await pc.reload();
     check("最後の1問のあと閉じても、開き直すと結果へ進み今日の記録がつく", await pc.evaluate(() => { const g = window.__mk; return !!g.load().days[g.todayKey()] && !g.load().runs.d; }));
     await pc.close(); }
+  { // 0時の前に最後の1問を終えて閉じ、翌日に開いても、終えた日の記録として残る
+    const pn = await newPage();
+    await pn.evaluate((k) => { const g = window.__mk, d = new Date(Date.parse(g.todayKey()) - 864e5).toISOString().slice(0, 10); localStorage.setItem(k, JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, kofi: {}, runs: { d: { mode: "d", date: d, list: g.dailyList(d), res: [0, 1, 2].map(() => ({ m: 0, g: [], h: 0 })) } } })); }, KEY);
+    await pn.reload();
+    check("前の日に終えて閉じても、翌日に開くとその日の記録がつく", await pn.evaluate(() => { const g = window.__mk; return !!g.load().days[new Date(Date.parse(g.todayKey()) - 864e5).toISOString().slice(0, 10)] && !g.load().runs.d; }));
+    await pn.close(); }
 } catch (e) { // 途中で止まっても、ここまでの結果とレポートは書き出す
   check("QA の操作が最後まで完了する", false, e.message.split("\n")[0]);
 } finally {

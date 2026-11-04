@@ -181,7 +181,7 @@ const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repe
 const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
 let MODE = "d";
 let mem = null; // 保存できない環境では、開いているあいだだけここに置く
-function load() { try { const j = localStorage.getItem(KEY); const s = JSON.parse(j === null && mem ? mem : j); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { if (mem) return Object.assign(fresh(), JSON.parse(mem)); } return fresh(); }
+function load() { try { const s = JSON.parse(mem !== null ? mem : localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { if (mem) return Object.assign(fresh(), JSON.parse(mem)); } return fresh(); } // 保存に失敗したあとは、古い記録よりメモリの方が新しい
 // 保存の前に読み直す（別のタブで進めた記録を消さない）
 function save(fn) { const s = load(); fn(s); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 const prevDay = (k) => new Date(Date.parse(k) - 864e5).toISOString().slice(0, 10);
@@ -217,7 +217,7 @@ function boardHtml(p, center, opt = {}) {
 function home() {
   const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
   // 最後の1問を終えて結果を見る前に閉じた日は、開き直したら結果へ進める（記録をつける）
-  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.date === k && r.res.length >= r.list.length) { MODE = m; return finish(); } }
+  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
   const n = Object.keys(s.dex).length, nr = nextRank(n);
   const rd = s.runs.d && s.runs.d.date === k ? s.runs.d : null, rh = s.runs.h && s.runs.h.date === k ? s.runs.h : null;
   app.innerHTML = `
