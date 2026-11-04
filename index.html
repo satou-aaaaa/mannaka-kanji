@@ -136,6 +136,21 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 @keyframes arr{0%{color:#b9ad9c}50%{transform:scale(1.5)}100%{color:var(--ok)}}
 .seal{display:inline-grid;place-items:center;width:46px;height:46px;border:2.5px solid var(--shu);border-radius:8px;color:var(--shu);font-family:var(--f-disp);font-size:15px;font-weight:800;line-height:1.05;transform:rotate(-10deg);animation:seal .45s .55s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes seal{from{transform:rotate(-10deg) scale(2.2);opacity:0}to{transform:rotate(-10deg) scale(1);opacity:1}}
+/* 入力して答える */
+.ansrow{display:flex;gap:8px}
+.ansrow input{flex:1;min-width:0;min-height:52px;box-sizing:border-box;border:1.5px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font-family:var(--f-disp);font-weight:800;font-size:24px;padding:0 12px;text-align:center}
+.ansrow input::placeholder{font-family:var(--f-body);font-weight:500;font-size:16px;color:#a99d8c}
+.ansrow input:focus{outline:2px solid var(--shu);outline-offset:1px}
+.ansrow button.main{flex:0 0 auto;min-width:88px}
+.cell.c .k.typing{opacity:.6}
+.tried{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.tried:empty{display:none}
+.chip{display:inline-flex;align-items:baseline;gap:3px;padding:3px 9px;border-radius:999px;background:var(--paper);border:1px solid var(--line);font-family:var(--f-disp);font-weight:800;font-size:18px}
+.chip s{text-decoration-color:var(--shu)}
+.chip small{font-family:var(--f-body);font-size:11px;color:var(--near);text-decoration:none}
+.tiles[hidden]{display:none}
+.tiles#cands{grid-template-columns:repeat(4,1fr)}
+.note.alt{color:var(--ok);font-weight:700}
 /* 実績・記録（カレンダー） */
 .achnew{background:#fff6e0;border:1px solid var(--near);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;margin:0;text-align:center}
 .achs{display:flex;flex-direction:column;gap:8px}
@@ -179,9 +194,10 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 <dialog id="howto" aria-labelledby="howto-t">
   <h2 id="howto-t">遊び方</h2>
   <ol>
-    <li>まんなかに入る漢字を、下の札から選びます。</li>
+    <li>まんなかに入る漢字を1字、入力欄に打って「決める」。</li>
     <li>矢印の向きに読むと、上下左右の4つが熟語になります。</li>
-    <li>答えは1つだけ。まちがえると、4つのうちいくつ熟語になったかが分かります。</li>
+    <li>まちがえると、4つのうちいくつ熟語になったかが分かります。何度でも打ち直せます。</li>
+    <li>こまったらヒント：読みを2つ、最後に候補を4つ（★が減ります）。</li>
   </ol>
   <p>例：上「史」・左「向」・右「昇」・下「位」なら、まんなかは「上」（史上・向上・上昇・上位）。</p>
   <p>今日の3問はだれでも同じで1日1回。時間制限はありません。熟語は JMdict（EDRDG）から選んでいます。</p>
@@ -189,6 +205,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
   <button class="main" id="howto-ok" style="width:100%">わかった</button>
 </dialog>
 <script src="data.js"></script>
+<script src="words.js"></script>
 <script>
 "use strict";
 const $ = (id) => document.getElementById(id), app = $("app");
@@ -216,7 +233,7 @@ const dailyList = (k) => [nth(0, dayIdx(k)), nth(1, dayIdx(k)), nth(2, dayIdx(k)
 const hardList = (k) => { const d = nth(2, dayIdx(k) * 4), out = []; for (let j = 1; out.length < 3; j++) { const x = nth(2, dayIdx(k) * 4 + j); if (x !== d && !out.includes(x)) out.push(x); } return out; }; // 1周の切れ目をまたぐ日は、前後の周で同じものが選ばれることがある。今日の最後の1問や、もう選んだものと重なったら次の番号から選ぶ
 // 札を並べる：答えと、まちがいの札（今日の3問は8枚・上級は11枚）。並びは問題ごとに決まる
 function tilesOf(p, n) { return shuffled([p.x, ...p.d.slice(0, n - 1)], rng(seedOf("tiles:" + p.id + ":" + n))); }
-const maskOf = (p, ch) => (ch === p.x ? 15 : p.m[p.d.indexOf(ch)] || 0);
+const maskOf = (p, ch) => (ch === p.x ? 15 : window.MK_WORDS ? dictMask(p, ch) : p.m[p.d.indexOf(ch)] || 0); // 打った字はどれでも辞書で確かめる（まちがいの札の印 m と同じ辞書）
 const bits = (m) => [1, 2, 4, 8].filter((b) => m & b).length;
 const starsOf = (m) => (m === 0 ? 3 : m === 1 ? 2 : 1); // m = まちがい＋ヒント
 const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
@@ -310,7 +327,7 @@ function home() {
     <p class="lead">まんなかに1文字入れて、4つの熟語を完成させる。<br>だれでも同じ1日3問。</p>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m, i) => `${LV[i]} ${"★".repeat(starsOf(m))}`).join("　")}</div>` : ""}
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${LV[rd.res.length]}）` : `今日の3問をとく <small>#${dayNo(k)}</small>`}</button>
-    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（札12枚・ヒントなし）"}</button>` : ""}
+    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（ヒント・候補なし）"}</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">漢字帳 ${n}/${P.length}</button></div>
     ${miss.length ? `<button class="sub" id="go-late">↺ 取りこぼした日をあとから（${miss.length}日）</button>` : ""}
     <div class="stats"><div><b>${playedDays(s).length}</b><small>といた日</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の字</small></div><div><b>${achGot(s).length}</b><small>実績</small></div></div>
@@ -355,57 +372,89 @@ function startRun(mode, opt) {
   play();
 }
 
-let cur = null; // 今の問題：{ i, date, p, tried:[選んだ札], hints }
+let cur = null; // 今の問題：{ i, date, p, tried:[打ってまちがえた字], hints }
+// ---- 入力して答える：打った文字を整えて、まんなかの1字を取り出す ----
+// 前後の空白を消して NFKC（全角・半角のゆれをそろえる）。漢字が無ければ（かなだけなど）null。盤の字は除き、熟語ごと打っても（例「上昇」）まんなかの字を見る
+function pickKanji(raw, p) {
+  const t = String(raw || "").normalize("NFKC").replace(/\s+/g, "");
+  const ks = [...t].filter((c) => /\p{Script=Han}/u.test(c) && c !== "々");
+  if (!ks.length) return { kana: t.length > 0 };
+  const board = new Set([p.w[0][0], p.w[1][0], p.w[2][1], p.w[3][1]]), rest = ks.filter((c) => !board.has(c));
+  return { ch: rest[0] || ks[0] };
+}
+const MW = window.MK_WORDS || { F: {}, B: {} };
+// 打った字で4つのうちどれが熟語になるか（辞書 JMdict の2字の語）。答えは 15
+const dictMask = (p, y) => ((MW.F[p.w[0][0]] || "").includes(y) ? 1 : 0) | ((MW.F[p.w[1][0]] || "").includes(y) ? 2 : 0) | ((MW.B[p.w[2][1]] || "").includes(y) ? 4 : 0) | ((MW.B[p.w[3][1]] || "").includes(y) ? 8 : 0);
+const wordsOf = (p, y) => [p.w[0][0] + y, p.w[1][0] + y, y + p.w[2][1], y + p.w[3][1]];
+const MAXH = (mode) => (mode === "h" ? 0 : 3); // ヒント：読み2つ → 最後に候補を4つから選ぶ（上級はヒントも候補もなし）
 function play() {
   const s = load(), run = s.runs[MODE];
   if (!run) return home();
   const i = run.res.length;
   if (i >= run.list.length) return finish();
-  const p = P[run.list[i]], hard = run.mode === "h", nT = hard ? 12 : 9;
-  // 途中で閉じても、選んだ札とヒントはそのまま
+  const p = P[run.list[i]], hard = run.mode === "h";
+  // 途中で閉じても、打った字とヒントはそのまま
   const saved = run.cur && run.cur.i === i ? run.cur : { tried: [], hints: 0 };
-  cur = { i, date: run.date, p, tried: saved.tried.slice(), hints: saved.hints, done: false };
+  cur = { i, date: run.date, p, tried: saved.tried.slice(), hints: saved.hints, done: false, hard };
   const label = run.mode === "d" ? LV[p.t] : run.mode === "a" ? `${md(run.date)} ${LV[p.t]}` : run.mode === "h" ? "上級" : `練習・${LV[p.t]}`;
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
       <div class="dots" aria-label="${i + 1}問目／${run.list.length}問">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>
       <span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}/${run.list.length}</span></header>
     <div id="bd">${boardHtml(p, "")}</div>
-    <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
+    <div class="ansrow" id="inp"><input id="ans" type="text" lang="ja" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="12" placeholder="まんなかの漢字" aria-label="まんなかに入る漢字"><button class="main" id="go" type="button">決める</button></div>
     <div id="near"></div>
-    <div class="tiles${nT === 12 ? " n12" : ""}" id="tiles">${tilesOf(p, nT).map((ch) => `<button class="tile" data-ch="${ch}" aria-label="${ch}">${ch}</button>`).join("")}</div>
+    <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
+    <div class="tried" id="tried"></div>
+    <div class="tiles" id="cands" hidden></div>
     <div id="after"></div>
-    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる字を選びます。</p>` : ""}`;
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる漢字を1字打ちます。</p>` : ""}`;
   $("back").onclick = home;
-  document.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch)));
+  const ans = $("ans");
+  // 変換中の Enter では送らない（IME の確定に使う。isComposing と keyCode 229 の両方を見る）
+  ans.addEventListener("keydown", (e) => { if (e.key !== "Enter") return; if (e.isComposing || e.keyCode === 229) return; e.preventDefault(); submit(); });
+  ans.addEventListener("input", () => { if (cur.done) return; if (document.querySelector("#bd .mk")) $("bd").innerHTML = boardHtml(p, "", { yomi: cur.hints ? p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) : null }); /* 打ち直し始めたら、前の字の ○× は消す */ const k = pickKanji(ans.value, p), c = $("ctr"); if (c) { c.textContent = k.ch || "？"; c.classList.toggle("fill", !!k.ch); c.classList.toggle("typing", !!k.ch); } });
+  $("go").onclick = submit;
   if ($("hint")) $("hint").onclick = hint;
   paintTried(true);
   window.scrollTo(0, 0);
+}
+function submit() {
+  if (!cur || cur.done) return;
+  const ans = $("ans"), k = pickKanji(ans.value, cur.p);
+  if (!k.ch) { $("near").innerHTML = `<div class="near">${k.kana ? "漢字に変換してから決めてください（まちがいには数えません）" : "まんなかに入る漢字を1字打ってください"}</div>`; ans.focus(); return; }
+  if (cur.tried.includes(k.ch)) { $("near").innerHTML = `<div class="near">「<b>${esc(k.ch)}</b>」はもう試しました</div>`; ans.select(); return; }
+  ans.value = "";
+  guess(k.ch);
 }
 function keep() { save((s) => { const r = s.runs[MODE]; if (same(r)) r.cur = { i: cur.i, tried: cur.tried.slice(), hints: cur.hints }; }); }
 const same = (r) => r && cur && r.date === cur.date && r.res.length === cur.i && r.list[cur.i] === cur.p.id; // 保存した進み具合が、この画面と同じ問題か
 function paintTried(repaint) { // repaint：ヒントを出したとき・開き直したときだけ盤を描き直す（まちがえた直後の ○× を消さない）
   const p = cur.p;
-  cur.tried.forEach((ch) => { const b = document.querySelector(`.tile[data-ch="${ch}"]`); if (b) { b.classList.add("out"); b.disabled = true; const m = bits(maskOf(p, ch)); b.innerHTML = `${ch}<small>${m}/4</small>`; } });
+  $("tried").innerHTML = cur.tried.map((ch) => `<span class="chip"><s>${esc(ch)}</s><small>${bits(maskOf(p, ch))}/4</small></span>`).join("");
   const miss = cur.tried.length;
   $("miss").textContent = miss || cur.hints ? `まちがい ${miss}${cur.hints ? `・ヒント ${cur.hints}` : ""}` : "";
-  if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < cur.hints ? r : "")) }); }
-  if ($("hint")) $("hint").disabled = cur.hints >= 2 || cur.done;
+  if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) }); }
+  // 最後のヒント：候補を4つ（答えと、まちがいの札3枚。並びは問題ごとに決まる）。上級は出さない
+  const cd = $("cands");
+  if (!cur.hard && cur.hints >= 3 && !cur.done) { cd.hidden = false; cd.innerHTML = tilesOf(p, 4).map((ch) => `<button class="tile${cur.tried.includes(ch) ? " out" : ""}" data-ch="${ch}" aria-label="${ch}"${cur.tried.includes(ch) ? " disabled" : ""}>${ch}${cur.tried.includes(ch) ? `<small>${bits(maskOf(p, ch))}/4</small>` : ""}</button>`).join(""); cd.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch))); }
+  else cd.hidden = true;
+  const h = $("hint"); if (h) { h.disabled = cur.hints >= MAXH(cur.hard ? "h" : "d") || cur.done; h.textContent = cur.hints >= 2 ? "候補から選ぶ" : "ヒント（読み）"; }
 }
 function hint() {
-  if (cur.done || cur.hints >= 2) return;
+  if (cur.done || cur.hard || cur.hints >= 3) return;
   cur.hints++; keep(); paintTried(true);
-  toast(cur.hints === 1 ? "上の熟語の読みを出しました" : "左の熟語の読みも出しました");
+  toast(cur.hints === 1 ? "上の熟語の読みを出しました" : cur.hints === 2 ? "左の熟語の読みも出しました" : "候補を4つ出しました");
 }
 function guess(ch) {
   if (cur.done || cur.tried.includes(ch)) return;
-  const p = cur.p;
-  if (ch !== p.x) {
-    const m = maskOf(p, ch), n = bits(m);
+  const p = cur.p, m0 = maskOf(p, ch), alt = ch !== p.x && m0 === 15; // 別解：ほかの字でも4つとも辞書の熟語になる
+  if (ch !== p.x && !alt) {
+    const m = m0, n = bits(m);
     cur.tried.push(ch); keep(); buzz(30);
-    $("bd").innerHTML = boardHtml(p, ch, { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < cur.hints ? r : "")) : null });
+    $("bd").innerHTML = boardHtml(p, esc(ch), { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) : null });
     $("ctr").classList.add("bad");
-    $("near").innerHTML = `<div class="near">「<b>${ch}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
+    $("near").innerHTML = `<div class="near">「<b>${esc(ch)}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
     paintTried();
     setTimeout(() => { if ($("ctr") && !cur.done) $("ctr").classList.remove("bad"); }, 450);
     return;
@@ -418,18 +467,21 @@ function guess(ch) {
   let saved = false, newA = [];
   const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; saved = true; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); newA = claimAch(s); });
   if (!saved) { toast("別の画面で先に進んでいます"); return play(); }
-  document.querySelectorAll(".tile").forEach((b) => (b.disabled = true)); if ($("hint")) $("hint").disabled = true;
-  $("bd").innerHTML = boardHtml(p, p.x, { win: true, mask: 15, yomi: p.r });
+  if ($("hint")) $("hint").disabled = true;
+  const ws = alt ? wordsOf(p, ch) : p.w;
+  $("bd").innerHTML = boardHtml(p, esc(ch), { win: true, mask: 15, yomi: alt ? null : p.r });
   $("bd").firstElementChild.classList.add("lit"); // 4つの熟語が順に灯る
   $("near").innerHTML = ""; document.querySelectorAll(".hint").forEach((e) => e.remove());
   const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
   $("after").innerHTML = `<div class="verdict" role="status">
-    <div class="hd">「${p.x}」${starStr(st)}${mistakes === 0 ? `<span class="seal" aria-label="一発">一発</span>` : ""}</div>
-    <div class="words">${p.w.map((w, j) => `<div><b>${w}</b><span>${p.r[j]}</span></div>`).join("")}</div>
+    <div class="hd">「${esc(ch)}」${starStr(st)}${mistakes === 0 ? `<span class="seal" aria-label="一発">一発</span>` : ""}</div>
+    ${alt ? `<p class="note alt">別解。用意した答えは「${p.x}」（${p.w.join("・")}）</p>` : ""}
+    <div class="words">${ws.map((w, j) => `<div><b>${w}</b><span>${alt ? "" : p.r[j]}</span></div>`).join("")}</div>
     <p class="note">${mistakes === 0 ? "一発で正解。" : `まちがい${cur.tried.length}回${cur.hints ? `・ヒント${cur.hints}回` : ""}`}</p>
     ${achLine(newA)}
     <button class="main" id="next">${last ? "結果を見る" : "次の問題へ"}</button></div>`;
-  $("tiles").style.display = "none";
+  $("inp").style.display = "none"; $("cands").hidden = true;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   $("next").onclick = play;
   setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
 }
@@ -542,7 +594,7 @@ function calView(ym) {
   bindFooter(); window.scrollTo(0, 0);
 }
 
-window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey };
+window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>

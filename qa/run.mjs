@@ -31,6 +31,12 @@ check("4つの熟語はどれも辞書（JMdict）にある", P.every((p) => p.w
   check("惜しい札（2つ以上熟語になる）が多くの問題にある（手がかりで考えられる）", P.filter((p) => p.m.slice(0, 8).some((m) => [1, 2, 4, 8].filter((b) => m & b).length >= 2)).length >= P.length * 0.8); }
 check("つらい言葉（死・殺など）を使わない", !P.some((p) => /[死殺葬屍姦淫娼尿糞呪遺棺骸刑獄墓弔喪病癌毒虐暴拷凶犯罪賊奴隷]/.test(p.w.join("") + p.d.join(""))));
 
+{ // 入力の手がかり用の辞書 words.js は tools/words.txt から作ったものと同じ（手で直していない）
+  const sw = { window: {} }; vm.runInNewContext(readFileSync(path.join(root, "words.js"), "utf8"), sw);
+  const MW = sw.window.MK_WORDS, A = new Set(), C = new Set(); for (const p of P) { A.add(p.w[0][0]); A.add(p.w[1][0]); C.add(p.w[2][1]); C.add(p.w[3][1]); }
+  const F = {}, B = {}; for (const w of W) { const [a, b] = [...w]; if (A.has(a)) F[a] = (F[a] || "") + b; if (C.has(b)) B[b] = (B[b] || "") + a; }
+  const same = (x, y) => Object.keys(x).length === Object.keys(y).length && Object.keys(x).every((k) => [...x[k]].sort().join("") === [...(y[k] || "")].sort().join(""));
+  check("入力の手がかり用の辞書 words.js は tools/words.txt（JMdict）と合う（node tools/make-words.cjs で作る）", same(MW.F, F) && same(MW.B, B)); }
 const html = readFileSync(path.join(root, "index.html"), "utf8");
 check("終えた回を消すのは同じ回のときだけ・0時を過ぎたホームの「今日」のボタンは描き直す（2026-11-04 CodeRabbit）", /c\.date === run\.date && c\.id === run\.id\) s2\.runs\[MODE\] = null/.test(html) && /\$\("go-d"\)\.onclick = \(\) => \(k !== todayKey\(\) \? home\(\)/.test(html));
 check("別のタブで今日の分を終えたあと、古い画面から今日・上級をもう一度始めない（2026-11-04 CodeRabbit）", /\(mode === "d" && s\.days\[k\]\) \|\| \(mode === "h" && s\.hdays\[k\]\)\) return;/.test(html));
@@ -49,7 +55,7 @@ check("画面にお笑いの言葉を入れない（本物っぽく）", !/お�
   check("感想フォームは名前・メールを聞かない（楽しさ・よかった所・直してほしい所だけ）", /id: fun/.test(fy) && /id: good/.test(fy) && /id: fix/.test(fy) && !/id: (name|email|mail)/.test(fy) && /labels: \["感想"\]/.test(fy)); }
 { const sw = readFileSync(path.join(root, "sw.js"), "utf8"), mf = JSON.parse(readFileSync(path.join(root, "manifest.webmanifest"), "utf8"));
   const shell = JSON.parse(sw.match(/SHELL = (\[[^\]]+\])/)[1].replace(/'/g, '"'));
-  const need = ["./index.html", "./data.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+  const need = ["./index.html", "./data.js", "./words.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
   check("PWA：ネットの返事の保存は、イベントの中で waitUntil に預ける（遅れて届いた新しい版も保存できる）", /e\.waitUntil\(Promise\.race\(\[net\.then[^\n]*Promise\.race\(\[caches\.open[^\n]*wait\(15000\)\]\); \}, \(\) => \{\}\)\.catch\(\(\) => \{\}\), wait\(60000\)\]\)\);/.test(sw) && !/\.then\([^\n]*e\.waitUntil/.test(sw));
   check("PWA：sw.js は画面のファイルを全部保存し、外へ何も送らない", need.every((f) => shell.includes(f)) && !/https?:\/\//.test(sw.replace(/^\/\/.*$/gm, "")));
   check("PWA：manifest にアイコン2つと名前がある", mf.name === "まんなか漢字" && mf.icons.length >= 2 && mf.start_url === "./"); }
@@ -71,6 +77,9 @@ async function newPage(w = 390, h = 844) {
 }
 const curP = (page) => page.evaluate(() => { const g = window.__mk, r = g.load().runs[g.mode()]; return g.P[r.list[r.res.length]]; });
 const KEY = "mannaka-v1";
+// 入力して答える：入力欄に打って「決める」。打った字が下に残っているか
+const type = async (pg, ch) => { await pg.fill("#ans", ch); await pg.click("#go"); };
+const triedHas = async (pg, ch) => ((await pg.textContent("#tried")) || "").includes(ch);
 try {
   const page = await newPage();
   // 2. 3問の組み方（日付の乱数）。3年分
@@ -112,32 +121,32 @@ try {
   check("ホームの例の盤は遊び方と同じ（史・向・昇・位）", (await page.textContent(".hero .board")).replace(/[\s↓→]/g, "") === "史向？昇位");
   await page.click("#go-d");
   let p = await curP(page);
-  check("1問目は「やさしい」・札は9枚・まんなかは「？」", p.t === 0 && (await page.locator(".tile").count()) === 9 && (await page.textContent("#ctr")) === "？");
+  check("1問目は「やさしい」・札は無く入力欄（16px以上・lang=ja・自動修正なし）・まんなかは「？」", p.t === 0 && (await page.locator(".tile").count()) === 0 && (await page.textContent("#ctr")) === "？" && (await page.evaluate(() => { const a = document.querySelector("#ans"); return parseFloat(getComputedStyle(a).fontSize) >= 16 && a.lang === "ja" && a.getAttribute("autocomplete") === "off" && a.getAttribute("spellcheck") === "false" && a.getAttribute("enterkeyhint") === "done"; })));
   const wrong = p.d.find((y, j) => [1, 2, 4, 8].filter((b) => p.m[j] & b).length >= 2 && (j < 8)) || p.d[0];
   const wm = p.m[p.d.indexOf(wrong)], wn = [1, 2, 4, 8].filter((b) => wm & b).length;
-  await page.click(`.tile[data-ch="${wrong}"]`);
+  await type(page, wrong);
   check("まちがえると、4つのうちいくつ熟語になったかが盤（○×）と文で分かる", (await page.locator(".mk.ok").count()) === wn && (await page.locator(".mk.ng").count()) === 4 - wn && (await page.textContent("#near")).includes(`${wn}つ熟語`));
-  check("まちがえた札は消え、もう押せない（何個なったかが札に残る）", await page.isDisabled(`.tile[data-ch="${wrong}"]`) && (await page.textContent(`.tile[data-ch="${wrong}"]`)).includes(`${wn}/4`));
+  check("まちがえた字は下に残り、何個なったかが分かる・入力欄は空にもどる", (await page.textContent("#tried")).includes(`${wrong}${wn}/4`) && (await page.inputValue("#ans")) === "");
   await page.click("#hint");
   check("ヒントで上の熟語の読みが出る", (await page.textContent(".cell[data-pos=t] .yomi")) === p.r[0]);
   await page.reload(); await page.click("#go-d");
-  check("途中で閉じても、まちがえた札とヒントはそのまま（続きから）", await page.isDisabled(`.tile[data-ch="${wrong}"]`) && (await page.textContent(".cell[data-pos=t] .yomi")) === p.r[0] && (await page.textContent("#miss")).includes("ヒント 1"));
+  check("途中で閉じても、まちがえた字とヒントはそのまま（続きから）", await triedHas(page, wrong) && (await page.textContent(".cell[data-pos=t] .yomi")) === p.r[0] && (await page.textContent("#miss")).includes("ヒント 1"));
   // 練習を始めても今日の途中は消えない
   await page.click("#back"); await page.click("#go-p"); await page.locator(".lv button").first().click(); await page.click("#back"); await page.click("#go-d");
-  check("練習を始めても、今日の途中経過は消えない", await page.isDisabled(`.tile[data-ch="${wrong}"]`) && (await page.evaluate(() => window.__mk.mode())) === "d");
-  await page.click(`.tile[data-ch="${p.x}"]`);
+  check("練習を始めても、今日の途中経過は消えない", await triedHas(page, wrong) && (await page.evaluate(() => window.__mk.mode())) === "d");
+  await type(page, p.x);
   check("正解すると、4つの熟語と読みが出て★1（まちがい1・ヒント1）", (await page.locator(".verdict .words div").count()) === 4 && (await page.textContent(".verdict")).includes(p.w[0]) && (await page.locator(".verdict .stars .off").textContent()).length === 2);
-  check("正解のあとは札が消える", !(await page.locator("#tiles").isVisible()));
+  check("正解のあとは入力欄が消える", !(await page.locator("#inp").isVisible()));
   check("正解すると4つの熟語が順に灯る（手ごたえ）・初めての実績が結果に小さく出る", (await page.locator("#bd .board.lit").count()) === 1 && (await page.textContent(".verdict .achnew")).includes("🏅 実績：はじめの一字"));
   await page.click("#next");
   // 別のタブで先に進んでいたら、古い画面の正解は足さない
   p = await curP(page);
   await page.evaluate((k) => { const s = JSON.parse(localStorage.getItem(k)); s.runs.d.res.push({ m: 0, g: [], h: 0 }); localStorage.setItem(k, JSON.stringify(s)); }, KEY);
-  await page.click(`.tile[data-ch="${p.x}"]`);
+  await type(page, p.x);
   check("別のタブで先に進んでいたら、古い画面の正解は足さず今の問題を出し直す", (await page.evaluate(() => window.__mk.load().runs.d.res.length)) === 2 && (await page.textContent("header")).includes("3/3"));
   await page.evaluate((k) => { const s = JSON.parse(localStorage.getItem(k)); s.runs.d.res.pop(); localStorage.setItem(k, JSON.stringify(s)); }, KEY);
   await page.reload(); await page.click("#go-d");
-  for (let j = 0; j < 2; j++) { p = await curP(page); await page.click(`.tile[data-ch="${p.x}"]`); await page.click("#next"); }
+  for (let j = 0; j < 2; j++) { p = await curP(page); await type(page, p.x); await page.click("#next"); }
   const share = await page.textContent(".share");
   const daily = await page.evaluate(() => { const g = window.__mk; return g.dailyList(g.todayKey()).map((id) => g.P[id]); });
   check("3問で結果・シェアの文は番号と色だけ（答えの字・熟語は出さない）", /まんなか漢字 #\d+/.test(share) && /やさしい (🟨|⬜)💡🟩/.test(share) && /ふつう 🟩/.test(share) && !daily.some((q) => share.includes(q.x) || q.w.some((w) => share.includes(w))));
@@ -145,10 +154,10 @@ try {
   check("まちがいのあった日は Ko-fi のひとことを出さない", (await page.locator(".kofi").count()) === 0);
   await page.click("#back");
   check("ホームで連続1日・今日の結果を見るに変わる・漢字帳に3字", (await page.textContent(".rank")).includes("連続1日") && (await page.textContent("#go-d")).includes("今日の結果") && (await page.textContent("#go-dex")).includes("3/"));
-  // 上級：札12枚・ヒントなし・全問一発なら Ko-fi
+  // 上級：入力だけ（ヒント・候補なし）・全問一発なら Ko-fi
   await page.click("#go-h");
-  check("上級は札12枚・ヒントのボタンが無い・むずかしい", (await page.locator(".tile").count()) === 12 && (await page.locator("#hint").count()) === 0 && (await curP(page)).t === 2);
-  for (let j = 0; j < 3; j++) { p = await curP(page); await page.click(`.tile[data-ch="${p.x}"]`); await page.click("#next"); }
+  check("上級は入力だけ・ヒントのボタンも候補も無い・むずかしい", (await page.locator("#ans").count()) === 1 && (await page.locator(".tile").count()) === 0 && (await page.locator("#hint").count()) === 0 && (await curP(page)).t === 2);
+  for (let j = 0; j < 3; j++) { p = await curP(page); await type(page, p.x); await page.click("#next"); }
   check("上級を全問一発で初めて終えると、結果に Ko-fi のひとことが1行", (await page.locator(".kofi").count()) === 1 && (await page.textContent(".big")).includes("全問一発"));
   await page.click("#back"); await page.click("#go-h");
   check("2回目に結果を開いても Ko-fi のひとことは出ない", (await page.locator(".kofi").count()) === 0);
@@ -157,7 +166,7 @@ try {
   // 期待値を練習の乱数に頼らない：遊んだ字が今日の問題と重なることがあるので、数でなく「遊んだ字が載ったか」を見る
   await page.click("#go-p"); await page.locator(".lv button").nth(1).click();
   const played = [];
-  for (let j = 0; j < 3; j++) { p = await curP(page); played.push(p.x); await page.click(`.tile[data-ch="${p.x}"]`); await page.click("#next"); }
+  for (let j = 0; j < 3; j++) { p = await curP(page); played.push(p.x); await type(page, p.x); await page.click("#next"); }
   const after = await page.evaluate(() => { const s = window.__mk.load(); return { days: Object.keys(s.days).length, dex: s.dex }; });
   check("練習は今日の記録を増やさず、漢字帳には載る", after.days === 1 && played.every((x) => after.dex[x] >= 1) && (await page.locator(".share").count()) === 0, played.join(""));
   await page.click("#go-dex");
@@ -171,7 +180,7 @@ try {
     const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
-    const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) }));
+    const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a, input")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) }));
     check(`幅${w}px：横にはみ出さず、押せる所は高さ44px以上`, homeOk && !r.over && r.small.length === 0, r.small.join(","));
     await p3.close();
   }
@@ -187,7 +196,7 @@ try {
   { // ヒントを出したあとにまちがえても、盤の ○× は消えない
     const ph = await newPage(); await ph.click("#howto-ok").catch(() => {}); await ph.click("#go-p"); await ph.locator(".lv button").first().click();
     const q = await curP(ph); await ph.click("#hint");
-    const w = q.d.find((y) => y !== q.x); await ph.click(`.tile[data-ch="${w}"]`);
+    const w = q.d.find((y) => y !== q.x); await type(ph, w);
     check("ヒントのあとにまちがえても、盤に ○× が出たまま", (await ph.locator(".mk.ok").count()) + (await ph.locator(".mk.ng").count()) === 4);
     await ph.close(); }
   { // 前の記録が残っていて、書き込みだけ失敗する（容量いっぱいなど）ときも、メモリの新しい進み具合を使う
@@ -229,6 +238,48 @@ try {
     check("保存に失敗したあと別のタブが保存しても、帳の★は高いほうを残す", await pn.evaluate((K) => { const g = window.__mk, s0 = g.load(); mem = JSON.stringify(Object.assign({}, s0, { t: 5, dex: { zz: 3 } })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 9, dex: { zz: 1 } }))); const r = g.load(); mem = null; return r.dex.zz === 3; }, "mannaka-v1"));
     check("時計が戻っても、保存の時刻 t は前より大きくなる", await pn.evaluate((K) => { const s0 = JSON.parse(localStorage.getItem(K)); const far = Date.now() + 1e9; localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: far }))); save(() => {}); return JSON.parse(localStorage.getItem(K)).t > far; }, "mannaka-v1"));
     await pn.close(); }
+  // 4b. 入力して答える
+  { const pi = await newPage(320, 700); await pi.click("#howto-ok"); await pi.click("#go-p"); await pi.locator(".lv button").first().click();
+    let q = await curP(pi);
+    const box = await pi.evaluate(() => ["#ans", "#go"].map((s) => document.querySelector(s).getBoundingClientRect().height));
+    check("幅320px：入力欄と「決める」は高さ44px以上", box.every((h) => h >= 44), box.join(","));
+    // 変換中の Enter（isComposing・keyCode 229）では送らない
+    await pi.fill("#ans", q.x);
+    const sent = await pi.evaluate(() => { const a = document.querySelector("#ans"); const ev = (o) => { const e = new KeyboardEvent("keydown", Object.assign({ key: "Enter", bubbles: true, cancelable: true }, o)); a.dispatchEvent(e); }; ev({ isComposing: true }); const e2 = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }); Object.defineProperty(e2, "keyCode", { get: () => 229 }); a.dispatchEvent(e2); return !!document.querySelector(".verdict"); });
+    check("変換中の Enter（isComposing・keyCode 229）では答えを送らない", !sent && (await pi.inputValue("#ans")) === q.x);
+    await pi.press("#ans", "Enter");
+    check("変換を終えた Enter で送れる", (await pi.locator(".verdict").count()) === 1);
+    await pi.click("#next"); q = await curP(pi);
+    await type(pi, "ひらがな"); await type(pi, "カタカナ");
+    check("かな・カタカナだけは「漢字に変換して」と出し、まちがいに数えない", (await pi.textContent("#near")).includes("漢字に変換") && (await pi.evaluate(() => { const g = window.__mk, r = g.load().runs.p; return !r.cur || r.cur.tried.length === 0; })) && (await pi.textContent("#miss")) === "");
+    const w2 = q.d[0]; await type(pi, w2); await type(pi, " " + w2 + " ");
+    check("同じ字をもう一度打っても、まちがいは増えない", (await pi.textContent("#near")).includes("もう試しました") && (await pi.textContent("#miss")).includes("まちがい 1"));
+    await type(pi, "　" + q.x + " ");
+    check("前後の空白（全角・半角）があっても正解になる", (await pi.locator(".verdict").count()) === 1);
+    await pi.click("#next"); q = await curP(pi);
+    await type(pi, q.w[2]); // 熟語ごと打っても（例「上昇」）まんなかの字を見る
+    check("熟語ごと打っても、盤の字を除いてまんなかの字を見る", (await pi.locator(".verdict").count()) === 1);
+    check("NFKC で全角・半角のゆれをそろえる（ｶﾀｶﾅ・全角英数字も整える）", await pi.evaluate(() => { const p = window.__mk.P[0]; return window.__mk.pickKanji(" ｱｲ ", p).ch === undefined && window.__mk.pickKanji("　上　", p).ch === "上" && window.__mk.pickKanji("⼈", p).ch === "人"; }));
+    await pi.close(); }
+  { // 別解：ほかの字でも4つとも辞書の熟語になるなら正解にして「別解」と出す
+    const pj = await newPage(); await pj.click("#howto-ok"); await pj.click("#go-p"); await pj.locator(".lv button").first().click();
+    const q = await curP(pj), y = "鬱";
+    await pj.evaluate(([q, y]) => { const W = window.MK_WORDS; W.F[q.w[0][0]] += y; W.F[q.w[1][0]] += y; W.B[q.w[2][1]] += y; W.B[q.w[3][1]] += y; }, [q, y]);
+    await type(pj, y);
+    check("別解（ほかの字でも4つとも熟語）は正解にして「別解」と出す・漢字帳はその問題の字", (await pj.locator(".verdict").count()) === 1 && (await pj.textContent(".verdict")).includes("別解") && (await pj.evaluate((x) => !!window.__mk.load().dex[x], q.x)));
+    await pj.close(); }
+  { // ヒント：読み2つ → 最後に候補4つ（★が下がる）。打った字は辞書で数える
+    const ph = await newPage(); await ph.click("#howto-ok"); await ph.click("#go-p"); await ph.locator(".lv button").nth(1).click();
+    const q = await curP(ph);
+    for (let j = 0; j < 3; j++) await ph.click("#hint");
+    const c = await ph.$$eval("#cands .tile", (a) => a.map((b) => b.dataset.ch));
+    check("3つ目のヒントで候補が4つ出る（答えを含む・問題ごとに決まった並び）・ヒントはそれ以上出ない", c.length === 4 && c.includes(q.x) && await ph.isDisabled("#hint") && JSON.stringify(c) === JSON.stringify(await ph.evaluate((id) => window.__mk.tilesOf(window.__mk.P[id], 4), q.id)));
+    const wr = c.find((x) => x !== q.x); await ph.click(`#cands .tile[data-ch="${wr}"]`);
+    check("候補でまちがえても、その字は押せなくなり下に残る", await ph.isDisabled(`#cands .tile[data-ch="${wr}"]`) && await triedHas(ph, wr));
+    await ph.click(`#cands .tile[data-ch="${q.x}"]`);
+    check("候補を使って正解すると★1（ヒント3）", (await ph.locator(".verdict .stars .off").textContent()).length === 2 && (await ph.textContent(".verdict")).includes("ヒント3回"));
+    check("打った字の「いくつ熟語になるか」は辞書で数え、まちがいの札の印と同じ", await ph.evaluate(() => { const g = window.__mk; return g.P.every((p) => p.d.every((y, j) => g.maskOf(p, y) === p.m[j])); }));
+    await ph.close(); }
   // 5. やりこみ：実績・記録（カレンダー）・取りこぼした日をあとから
   { // 実績の数え方（いまの記録から毎回数える）
     const pa = await newPage(320, 700);
@@ -261,16 +312,16 @@ try {
     const ra = await pz.evaluate((A) => { const g = window.__mk, s = g.load(); return { list: JSON.stringify(s.runs[g.aKey(A)].list), want: JSON.stringify(g.dailyList(A)), mode: g.mode() }; }, A);
     check("あとから遊ぶ問題は、その日の今日の3問と同じ（日付の種）", ra.list === ra.want && ra.mode === "a:" + A && (await pz.textContent("header")).includes("11/15"));
     let q = await curP(pz); const wr = q.d[0];
-    await pz.click(`.tile[data-ch="${q.x}"]`); await pz.click("#next");
-    q = await curP(pz); await pz.click(`.tile[data-ch="${q.d[0]}"]`);
+    await type(pz, q.x); await pz.click("#next");
+    q = await curP(pz); await type(pz, q.d[0]);
     await pz.click("#back"); await pz.click("#go-cal"); await pz.click(`.misses button[data-d="${B}"]`);
     const both = await pz.evaluate(([A, B]) => { const s = window.__mk.load(); return { a: s.runs["a:" + A], b: s.runs["a:" + B] }; }, [A, B]);
     check("別の日を始めても、前の日の途中経過は残る（runs を日付ごとに分ける）", both.a && both.a.res.length === 1 && both.a.cur && both.a.cur.tried.length === 1 && both.b && both.b.res.length === 0);
     await pz.click("#back"); await pz.click("#go-cal");
     check("記録で途中の日は「続き」と出る", (await pz.textContent(`.misses button[data-d="${A}"]`)).includes("続き"));
     await pz.click(`.misses button[data-d="${A}"]`);
-    check("前の日に戻ると続きから（2問目・まちがえた札もそのまま）", (await pz.textContent("header")).includes("2/3") && await pz.isDisabled(`.tile[data-ch="${q.d[0]}"]`));
-    for (let j = 0; j < 2; j++) { q = await curP(pz); await pz.click(`.tile[data-ch="${q.x}"]`); await pz.click("#next"); }
+    check("前の日に戻ると続きから（2問目・まちがえた字もそのまま）", (await pz.textContent("header")).includes("2/3") && await triedHas(pz, q.d[0]));
+    for (let j = 0; j < 2; j++) { q = await curP(pz); await type(pz, q.x); await pz.click("#next"); }
     const fin = await pz.evaluate((A) => { const g = window.__mk, s = g.load(); return { late: !!s.late[A], day: !!s.days[A], days: Object.keys(s.days).length, st: g.streak(s.days), runB: !!s.runs["a:2026-11-17"], dex: Object.keys(s.dex).length, miss: g.missedDays(s) }; }, A);
     check("あとから終えた日は late に入り、今日の記録（days）・連続の日を増やさない。帳には載る", fin.late && !fin.day && fin.days === 1 && fin.st === 1 && fin.dex === 3 && !fin.miss.includes(A) && fin.runB, JSON.stringify(fin));
     check("あとからの結果：Ko-fi の1行・上級のボタンは出さず、シェアに「あとから」・実績「取りこぼし回収」", (await pz.locator(".kofi").count()) === 0 && (await pz.locator("#go-h").count()) === 0 && (await pz.textContent(".share")).includes("（あとから）") && (await pz.textContent(".achnew")).includes("取りこぼし回収"));
