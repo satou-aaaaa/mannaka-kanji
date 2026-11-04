@@ -285,22 +285,22 @@ function play() {
   $("back").onclick = home;
   document.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch)));
   if ($("hint")) $("hint").onclick = hint;
-  paintTried();
+  paintTried(true);
   window.scrollTo(0, 0);
 }
 function keep() { save((s) => { const r = s.runs[MODE]; if (same(r)) r.cur = { i: cur.i, tried: cur.tried.slice(), hints: cur.hints }; }); }
 const same = (r) => r && cur && r.date === cur.date && r.res.length === cur.i && r.list[cur.i] === cur.p.id; // 保存した進み具合が、この画面と同じ問題か
-function paintTried() {
+function paintTried(repaint) { // repaint：ヒントを出したとき・開き直したときだけ盤を描き直す（まちがえた直後の ○× を消さない）
   const p = cur.p;
   cur.tried.forEach((ch) => { const b = document.querySelector(`.tile[data-ch="${ch}"]`); if (b) { b.classList.add("out"); b.disabled = true; const m = bits(maskOf(p, ch)); b.innerHTML = `${ch}<small>${m}/4</small>`; } });
   const miss = cur.tried.length;
   $("miss").textContent = miss || cur.hints ? `まちがい ${miss}${cur.hints ? `・ヒント ${cur.hints}` : ""}` : "";
-  if (cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < cur.hints ? r : "")) }); }
+  if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < cur.hints ? r : "")) }); }
   if ($("hint")) $("hint").disabled = cur.hints >= 2 || cur.done;
 }
 function hint() {
   if (cur.done || cur.hints >= 2) return;
-  cur.hints++; keep(); paintTried();
+  cur.hints++; keep(); paintTried(true);
   toast(cur.hints === 1 ? "上の熟語の読みを出しました" : "左の熟語の読みも出しました");
 }
 function guess(ch) {

@@ -85,7 +85,7 @@ try {
     // むずかしいは今日の3問目と上級の3問で1日4問ずつ使う。使う順に並べて、1周（問題数）ごとに重ならないかを見る
     seen[2] = seen.h;
     [0, 1, 2].forEach((t) => { const L = g.POOL[t].length; for (let i = 0; i + L <= seen[t].length; i += L) if (new Set(seen[t].slice(i, i + L)).size !== L) out.dup++; });
-    out.same = JSON.stringify(g.dailyList("2026-12-01")) === JSON.stringify(g.dailyList("2026-12-01"));
+    out.d1201 = JSON.stringify(g.dailyList("2026-12-01"));
     out.tiles = g.P.every((p) => { const a = g.tilesOf(p, 9), b = g.tilesOf(p, 12); return a.includes(p.x) && b.includes(p.x) && new Set(a).size === 9 && new Set(b).size === 12 && JSON.stringify(a) === JSON.stringify(g.tilesOf(p, 9)); });
     out.pos = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((j) => g.P.filter((p) => g.tilesOf(p, 9)[j] === p.x).length);
     return out;
@@ -93,7 +93,11 @@ try {
   check("今日の3問は毎日「やさしい・ふつう・むずかしい」、上級はむずかしい3問（3年分）", sel.bad.length === 0, sel.bad.slice(0, 3).join(","));
   check("1周するまで同じ問題は出ない（難しさごと）", sel.dup === 0);
   check("上級は今日の3問目と重ならない（3年分）", sel.hardHit === 0, `${sel.hardHit}日`);
-  check("同じ日はいつ開いても同じ3問", sel.same);
+  { // 別のブラウザ（まっさらな別のコンテキスト）で開いても同じ3問か
+    const ctx = await browser.newContext(); const p2 = await ctx.newPage(); await p2.goto(url);
+    const d2 = await p2.evaluate(() => JSON.stringify(window.__mk.dailyList("2026-12-01")));
+    await ctx.close();
+    check("同じ日は別のブラウザで開いても同じ3問", sel.d1201 === d2); }
   check("札は答えを含み、9枚・12枚とも重ならず、問題ごとに並びが決まる", sel.tiles);
   check("答えの札の場所が偏らない（どの場所も 5〜20%）", sel.pos.every((n) => n >= P.length * 0.05 && n <= P.length * 0.2), sel.pos.join(","));
 
@@ -174,6 +178,12 @@ try {
     await pb.click("#back");
     check("保存できないブラウザでも、遊び方が何度も開かない", !(await pb.locator("#howto[open]").count()));
     await pb.close(); }
+  { // ヒントを出したあとにまちがえても、盤の ○× は消えない
+    const ph = await newPage(); await ph.click("#howto-ok").catch(() => {}); await ph.click("#go-p"); await ph.locator(".lv button").first().click();
+    const q = await curP(ph); await ph.click("#hint");
+    const w = q.d.find((y) => y !== q.x); await ph.click(`.tile[data-ch="${w}"]`);
+    check("ヒントのあとにまちがえても、盤に ○× が出たまま", (await ph.locator(".mk.ok").count()) + (await ph.locator(".mk.ng").count()) === 4);
+    await ph.close(); }
   { // 前の記録が残っていて、書き込みだけ失敗する（容量いっぱいなど）ときも、メモリの新しい進み具合を使う
     const pq = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pq.on("pageerror", (e) => errors.push(e.message));
