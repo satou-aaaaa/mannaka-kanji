@@ -377,6 +377,40 @@ try {
     for (const go of ["#go-ach", "#go-cal", "#go-d", "#go-e", "#quit"]) { if (go !== "#quit") await pw.click("#back").catch(() => {}); await pw.click(go); const r = await pw.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) })); if (r.over || r.small.length) bad.push(go + ":" + r.small.join("/")); }
     check(`幅${w}px：実績・記録・結果・とことん（遊ぶ・終わり）の画面もはみ出さず、押せる所は44px以上`, bad.length === 0, bad.join(" "));
     await pw.close(); }
+  { // 色だけで分けない（WCAG 1.4.1。shared-workflows routines/game-dev.md A1・A7・A8）：状態は記号・文字・形・aria-label でも出て、知らせは #live（role=status）に文字で出る
+    const pc = await newPage(390, 844);
+    await pc.evaluate((K) => { localStorage.setItem(K, JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, late: {}, dex: {}, runs: {}, kofi: {}, ebest: 0 })); }, KEY); await pc.reload();
+    check("読み上げソフトへの知らせの場所 #live（role=status・aria-live=polite）が、どの画面にもある", await pc.evaluate(() => { const l = document.getElementById("live"); return !!l && l.getAttribute("role") === "status" && l.getAttribute("aria-live") === "polite" && !l.closest("#app"); }));
+    check("見やすさの設定を開くボタン（data-a11y-open）がホームと遊び方にある", (await pc.locator("#app [data-a11y-open]").count()) === 1 && (await pc.locator("#howto [data-a11y-open]").count()) === 1);
+    await pc.click("#go-d");
+    const dots = await pc.evaluate(() => [...document.querySelectorAll(".dots i")].map((i) => { const c = getComputedStyle(i); return { cls: i.className, h: i.getBoundingClientRect().height, bg: c.backgroundColor, bw: parseFloat(c.borderTopWidth) }; }));
+    check("進み具合の点は色だけでなく形でも分かる（いま＝高い・まだ＝中が空の枠）", dots.length === 3 && dots[0].cls === "on" && dots[0].h > dots[1].h && dots.slice(1).every((d) => d.bg === "rgba(0, 0, 0, 0)" && d.bw >= 1), JSON.stringify(dots));
+    const q = await curP(pc), wy = q.d.find((y, j) => { const n = [1, 2, 4, 8].filter((b) => q.m[j] & b).length; return n >= 1 && n <= 3; }) || q.d[0];
+    await type(pc, wy); await pc.waitForTimeout(120);
+    const mk = await pc.evaluate(() => [...document.querySelectorAll(".mk")].map((e) => e.className.replace("mk ", "") + ":" + e.textContent));
+    check("まちがえたとき、熟語になった・ならないは色だけでなく ○・× の記号でも出る", mk.length === 4 && mk.every((t) => t === "ok:○" || t === "ng:×"), mk.join(","));
+    check("まちがえたことと、どの向きが熟語になったか（上○・左× など）を #live に文字で知らせる", await pc.evaluate((y) => { const t = document.getElementById("live").textContent; return t.includes("まちがい") && t.includes(y) && /上[○×]・左[○×]・右[○×]・下[○×]/.test(t); }, wy));
+    check("問題の盤に読み上げの印（data-a11y-say）と、盤の字を言う aria-label がある", await pc.evaluate(() => { const b = document.querySelector("#bd .board"); return !!b && b.hasAttribute("data-a11y-say") && /上「.」左「.」右「.」下「.」/.test(b.getAttribute("aria-label")); }));
+    await pc.click("#hint"); await pc.waitForTimeout(120);
+    check("ヒントの知らせも #live に文字で出る", (await pc.textContent("#live")).includes("読み"));
+    await type(pc, q.x); await pc.waitForTimeout(120);
+    check("正解の知らせは #live に文字（「正解」・星の数）で出て、取れなかった星は ☆（色の濃さだけで分けない）", (await pc.textContent("#live")).includes(`正解「${q.x}」`) && (await pc.textContent(".verdict .stars .off")) === "☆☆");
+    await pc.click("#back"); await pc.click("#go-dex");
+    check("漢字帳の字は★の数を字の隅（data-st）と aria-label にも出す（朱の塗り・枠の色だけで分けない）", await pc.evaluate((x) => { const b = [...document.querySelectorAll(".dex button")].find((e) => e.textContent === x); return !!b && b.dataset.st === "★1" && getComputedStyle(b, "::after").content.includes("★1") && b.getAttribute("aria-label").includes("星1つ"); }, q.x));
+    await pc.click("#back"); await pc.click("#go-ach");
+    check("取れた実績は色だけでなく ✓ でも分かり、まだのものは「いま/目標」が出る", await pc.evaluate(() => { const g = document.querySelector('.ach[data-id="first"]'), n = document.querySelector('.ach[data-id="dex50"]'); return g.classList.contains("got") && g.querySelector("b").textContent.startsWith("✓") && !n.querySelector("b").textContent.startsWith("✓") && /\d+\/50/.test(n.querySelector(".pg").textContent); }));
+    await pc.close();
+    // 色の見分けを助ける・動きを減らす（localStorage a11y-v1）
+    const pv = await newPage(390, 844);
+    await pv.evaluate((K) => { localStorage.setItem(K, JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, late: {}, dex: {}, runs: {}, kofi: {}, ebest: 0 })); localStorage.setItem("a11y-v1", JSON.stringify({ cvd: true, calm: true })); }, KEY);
+    await pv.addInitScript(() => { window.__vib = 0; try { Object.defineProperty(navigator, "vibrate", { value: () => { window.__vib++; return true; }, configurable: true }); } catch (e) {} });
+    await pv.reload(); await pv.click("#go-d");
+    const q2 = await curP(pv), wy2 = q2.d.find((y, j) => q2.m[j] > 0 && q2.m[j] < 15) || q2.d[0];
+    await type(pv, wy2);
+    const cv = await pv.evaluate(() => { const ok = document.querySelector(".mk.ok"), ng = document.querySelector(".mk.ng"); return { cvd: document.documentElement.classList.contains("a11y-cvd"), ok: ok ? getComputedStyle(ok).backgroundColor : "", ngR: ng ? getComputedStyle(ng).borderTopLeftRadius : "", vib: window.__vib }; });
+    check("「色の見分けを助ける」では、熟語になった印を青（#0072B2）に、ならない印を四角に替える", cv.cvd && (!cv.ok || cv.ok === "rgb(0, 114, 178)") && (!cv.ngR || cv.ngR === "3px") && (cv.ok || cv.ngR), JSON.stringify(cv));
+    check("「動きを減らす」では、まちがえても振動させない", cv.vib === 0, JSON.stringify(cv));
+    await pv.close(); }
 } catch (e) { // 途中で止まっても、ここまでの結果とレポートは書き出す
   check("QA の操作が最後まで完了する", false, e.message.split("\n")[0]);
 } finally {
@@ -400,6 +434,12 @@ try {
   await browser.close();
 }
 check("画面のエラーが無い", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+{ // 見やすさ・読みやすさ・偏り（shared-workflows template/qa/a11y.mjs の写し。routines/game-dev.md「だれでも遊べるように」）
+  const { spawnSync } = await import("node:child_process");
+  const a = spawnSync(process.execPath, [path.join(root, "qa", "a11y.mjs")], { encoding: "utf8", env: process.env });
+  check("見やすさ・読みやすさの検査（qa/a11y.mjs。中身は qa-report/a11y.md）", a.status === 0, (a.stdout.match(/^- ❌.*$/gm) || []).join(" / ") || (a.status ? a.stderr.slice(-300) : ""));
+}
 
 const ng = results.filter((r) => !r.ok);
 const md = `# まんなか漢字 QA\n\n${results.map((r) => `- ${r.ok ? "✅" : "❌"} ${r.name}${r.detail ? `（${r.detail}）` : ""}`).join("\n")}\n\n${ng.length ? `❌ ${ng.length}件` : `✅ ${results.length}項目すべて通過`}\n`;

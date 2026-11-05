@@ -27,7 +27,7 @@
 <style>
 /* 和紙の地に墨の字、朱の印。盤は十字に5マス、矢印で熟語の向きを見せる */
 :root{
-  --bg:#f3ede0; --paper:#fbf8f1; --ink:#1f1b16; --ink2:#6b6257; --line:#1f1b1622; --shu:#c43d2b; --shu2:#8f2a1d; --ok:#2f7d5b; --near:#c9932e; --tile:#fffdf8;
+  --bg:#f3ede0; --paper:#fbf8f1; --ink:#1f1b16; --ink2:#6b6257; --line:#1f1b1622; --shu:#c43d2b; --shu2:#8f2a1d; --ok:#2f7d5b; --near:#8a6a1f; --tile:#fffdf8;
   --f-disp:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
   --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
   color-scheme:light;
@@ -40,8 +40,9 @@ h1{font-family:var(--f-disp);font-weight:800;font-size:22px;margin:0;letter-spac
 h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--ink2);margin-left:8px;font-weight:500}
 .icon{all:unset;cursor:pointer;font-size:18px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);box-sizing:border-box;padding:0 8px;background:var(--paper)}
 .dots{display:flex;gap:6px;flex:1;max-width:140px}
-.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
-.dots i.on{background:var(--shu)}.dots i.done{background:var(--ink)}
+.dots{align-items:center}
+.dots i{flex:1;height:6px;border-radius:3px;background:transparent;border:1.5px solid var(--ink2);box-sizing:border-box}
+.dots i.on{background:var(--shu);border-color:var(--shu2);height:12px}.dots i.done{background:var(--ink);border-color:var(--ink)}
 button.main,a.main{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:12px;background:var(--shu);color:#fff;font-weight:700;font-size:17px;padding:0 16px;text-align:center;box-shadow:0 4px 0 var(--shu2)}
 button.main:active{transform:translateY(2px);box-shadow:0 2px 0 var(--shu2)}
 button.main.alt{background:var(--ink);box-shadow:0 4px 0 #000}
@@ -67,7 +68,7 @@ button.sub:disabled{opacity:.4;cursor:default}
 .ar.ok{color:var(--ok)}.ar.ng{color:#b9ad9c}
 .cell[data-pos=t] .yomi{top:-4px;bottom:auto}
 .mk{position:absolute;right:2px;top:2px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;z-index:2;color:#fff}
-.mk.ok{background:var(--ok)}.mk.ng{background:#a99d8c}
+.mk.ok{background:var(--ok)}.mk.ng{background:#6f6455}
 .yomi{position:absolute;bottom:-4px;left:0;right:0;text-align:center;font-size:11px;color:var(--ink2);z-index:2;white-space:nowrap}
 /* 札 */
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -85,7 +86,7 @@ button.sub:disabled{opacity:.4;cursor:default}
 .words b{font-family:var(--f-disp);font-size:20px}
 .words span{font-size:12px;color:var(--ink2)}
 .stars{color:var(--near);letter-spacing:.1em;font-size:20px}
-.stars .off{color:#1f1b1626}
+.stars .off{color:#857a6b}
 .near{background:var(--paper);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px;text-align:center;color:var(--ink2)}
 .near b{color:var(--ink);font-family:var(--f-disp);font-size:16px}
 /* ホーム */
@@ -112,6 +113,8 @@ button.sub:disabled{opacity:.4;cursor:default}
 .dex button{all:unset;cursor:pointer;aspect-ratio:1;display:grid;place-items:center;border-radius:8px;font-family:var(--f-disp);font-weight:800;font-size:22px;background:var(--tile);border:1px solid var(--line);position:relative;min-height:44px}
 .dex button.s3{background:var(--shu);color:#fff;border-color:var(--shu2)}
 .dex button.s2{border:2px solid var(--shu)}
+.dex button::after{content:attr(data-st);position:absolute;right:3px;bottom:1px;font:700 9px/1 var(--f-body);letter-spacing:-.05em}
+.dex button.s3::after{color:#fff}
 .lv{display:flex;gap:8px}
 .lv button{flex:1}
 .sheet{background:var(--paper);border:1.5px solid var(--ink);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
@@ -121,6 +124,7 @@ dialog h2{font-family:var(--f-disp);margin:0 0 10px;letter-spacing:.1em}
 dialog ol{padding-left:1.3em;margin:0 0 12px;line-height:1.8}
 dialog p{margin:0 0 10px;font-size:14px;line-height:1.7;color:var(--ink2)}
 dialog a{color:var(--shu2);min-height:44px;display:inline-flex;align-items:center}
+.sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;margin:-1px;padding:0;border:0}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #0005;max-width:90%;text-align:center}
 .hint{background:var(--paper);border:1px solid var(--shu);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
 footer{margin-top:auto;text-align:center;font-size:12px;color:var(--ink2);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
@@ -138,7 +142,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 /* 入力して答える */
 .ansrow{display:flex;gap:8px}
 .ansrow input{flex:1;min-width:0;min-height:52px;box-sizing:border-box;border:1.5px solid var(--ink);border-radius:12px;background:#fff;color:var(--ink);font-family:var(--f-disp);font-weight:800;font-size:24px;padding:0 12px;text-align:center}
-.ansrow input::placeholder{font-family:var(--f-body);font-weight:500;font-size:16px;color:#a99d8c}
+.ansrow input::placeholder{font-family:var(--f-body);font-weight:500;font-size:16px;color:#6f6455}
 .ansrow input:focus{outline:2px solid var(--shu);outline-offset:1px}
 .ansrow button.main{flex:0 0 auto;min-width:88px}
 .cell.c .k.typing{opacity:.6}
@@ -171,7 +175,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 .cal .wd{font-size:11px;color:var(--ink2);text-align:center}
 .cal .c{min-height:44px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--ink2);background:var(--paper);border:1px solid var(--line);box-sizing:border-box;position:relative;line-height:1.1}
 .cal .c.e{background:none;border:none}
-.cal .c.out{opacity:.35}
+.cal .c.out{color:#6f6455;background:none;border-color:transparent}
 .cal .c i{font-style:normal;font-size:10px;letter-spacing:-.05em}
 .cal .c.d1{background:#c43d2b26;color:var(--ink)}.cal .c.d2{background:#c43d2b66;color:var(--ink)}.cal .c.d3{background:var(--shu);color:#fff;border-color:var(--shu2)}
 .cal .c.late{background:#c43d2b10;border:1.5px dashed var(--shu);color:var(--ink)}
@@ -186,14 +190,164 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 .misses small{font-size:11px;color:var(--ink2);font-weight:500}
 .streak{font-size:12px;color:var(--ink2)}
 .life{font-size:18px;letter-spacing:2px}.life .off{opacity:.25}
+html.a11y-cvd{--ok:#0072B2}
+html.a11y-cvd .mk.ng{border-radius:3px}
+html.a11y-cvd .ar.ng{color:#6f6455;opacity:.55}
+html.a11y-cvd .ar.ok{font-weight:900}
+html.a11y-cvd .dots i.on{background:var(--ink);border-color:var(--ink);height:14px;border-radius:2px}
+html.a11y-cvd .dots i.done{height:6px}
+html.a11y-cvd .dex button::after{font-size:10px}
 @media (max-width:360px){.row>.sub{font-size:14px;padding:0 6px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* all:unset のボタン（カレンダーのます目など）でも枠が消えないよう、いちばん最後に強く書く（2026-11-04 CodeRabbit） */
 :is(.icon,button,a):focus-visible{outline:2px solid var(--shu)!important;outline-offset:2px}
 </style>
+<!-- a11y:begin 見やすさの設定 v3（shared-workflows template/a11y/a11y.html の写し。ここでは直さず、ひな形を直して全部のゲームへ写す。drift-check と qa/a11y.mjs が同じ中身か見る） -->
+<style id="a11y-css">
+/* だれでも：キーボードで選んだ所に太い枠（WCAG 2.4.7・2.4.13） */
+:is(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid #1a5fd0!important;outline-offset:2px!important;box-shadow:0 0 0 5px #fff!important}
+/* 読みやすい文字：UD フォント・行間 1.7・字間を少し広げる・斜体にしない（BDA Dyslexia Style Guide） */
+html.a11y-read body{line-height:1.7}
+html.a11y-read body,html.a11y-read body :where(*:not(svg):not(svg *):not([data-a11y-keepfont]):not([data-a11y-keepfont] *)){font-family:"BIZ UDPGothic","BIZ UDGothic","UD デジタル 教科書体 NK-R","UD Digi Kyokasho NK-R","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif!important;font-style:normal!important}
+html.a11y-read :is(p,li,dd,dt,blockquote,[data-a11y-say]){line-height:1.8!important;letter-spacing:.04em!important}
+html.a11y-read em,html.a11y-read i:not([aria-hidden]){font-style:normal!important;font-weight:700}
+/* 動きを減らす：揺れ・点滅・すべる動きを止める（WCAG 2.3.3。端末の「視差効果を減らす」でも自動で入る） */
+html.a11y-calm *,html.a11y-calm *::before,html.a11y-calm *::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
+/* 色の見分けを助ける：ゲームごとの形・模様は各ゲームが html.a11y-cvd の下に書く。ここではリンクに下線 */
+html.a11y-cvd a{text-decoration:underline!important}
+/* ふりがな：ゲームが <ruby class="a11y-rb"> を置いた所だけ。選んだときだけ出す */
+html:not(.a11y-ruby) ruby.a11y-rb>rt{display:none}
+/* 設定の画面（どのゲームでも同じ見た目・同じ濃さ。白地に黒で 15:1） */
+.a11y-dlg{max-width:min(420px,calc(100vw - 32px));width:100%;box-sizing:border-box;border:2px solid #1d2320;border-radius:14px;padding:18px 16px 14px;background:#fffdf8;color:#1d2320;font:500 16px/1.6 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;letter-spacing:0}
+.a11y-dlg::backdrop{background:#0008}
+.a11y-dlg h2{font-size:19px;margin:0 0 4px;font-weight:700;line-height:1.4}
+.a11y-dlg p{margin:4px 0 10px;font-size:14px;color:#3d4440;line-height:1.6}
+.a11y-dlg label{display:flex;gap:12px;align-items:center;min-height:48px;padding:6px 4px;border-top:1px solid #1d232022;cursor:pointer;line-height:1.4}
+.a11y-dlg label small{display:block;font-size:13px;color:#3d4440}
+.a11y-dlg input[type=checkbox]{width:26px;height:26px;flex:none;accent-color:#1a5fd0;margin:0}
+.a11y-dlg .a11y-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.a11y-dlg button,.a11y-btn,.a11y-saybtn{min-height:44px;min-width:44px;border-radius:10px;border:2px solid #1d2320;background:#fff;color:#1d2320;font:700 15px/1.2 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;padding:0 14px;cursor:pointer;letter-spacing:0}
+.a11y-dlg button.a11y-ok{background:#1d2320;color:#fff}
+.a11y-btn.a11y-float{position:fixed;left:max(8px,env(safe-area-inset-left,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:2147483000}
+/* 読み上げボタンが、いちばん下のボタン・リンクにかぶらないよう下をあける */
+html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+.a11y-saybtn{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:2147483000;box-shadow:0 2px 8px #0003}
+.a11y-saybtn[hidden],.a11y-dlg [hidden]{display:none!important}
+.a11y-note{font-size:13px!important}
+</style>
+<script id="a11y-script">
+/* 見やすさの設定（色覚・ディスレクシア・弱視・動きに弱い人のため）。外へは何も送らない。
+   設定は localStorage の a11y-v1 に置く。同じサイト（satou-aaaaa.github.io）のゲームは同じ設定を使う。
+   ゲームの側でできること：
+   - 設定を開くボタンに data-a11y-open を付ける（無ければ左下に「Aa」のボタンを出す）
+   - 読み上げる文に data-a11y-say を付ける（問題文・知らせなど）
+   - 色の見分けを助ける形・模様は html.a11y-cvd の下に CSS で書く。JS では A11y.on('cvd')
+   - 揺れ・すべる動きを JS で動かすときは、A11y.on('calm') なら止める
+   - 設定が変わると document に a11ychange が届く
+   - 設定の印は html の class「a11y-<設定の名前>」（a11y-read など）。部品の class はこれと重ならない名前にする（2026-11-05 a11y-say がボタンとぶつかった） */
+(() => {
+  const KEY = "a11y-v1";
+  const root = document.documentElement;
+  const OPTS = [
+    ["read", "読みやすい文字", "UD フォント・行間と字間を広く"],
+    ["cvd", "色の見分けを助ける", "色に形・模様・記号を足す"],
+    ["calm", "動きを減らす", "揺れ・点滅・すべる動きを止める"],
+    ["say", "読み上げのボタンを出す", "問題や知らせを声で読む（端末の中の声だけ）"],
+    ["ruby", "ふりがなを出す", "むずかしい漢字に読みを付ける"],
+  ];
+  const media = (q) => { try { return matchMedia(q).matches; } catch { return false; } };
+  let S = {};
+  try { S = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch { S = {}; }
+  // 決めていないものは端末の設定に合わせる（視差効果を減らす → 動きを減らす）
+  const on = (k) => (k in S ? !!S[k] : k === "calm" ? media("(prefers-reduced-motion: reduce)") : false);
+  let fontLoaded = false;
+  const loadFont = () => {
+    if (fontLoaded) return; fontLoaded = true;
+    // Google Fonts を許しているページだけ取りに行く（許していなければ端末にある UD フォントを使う）
+    const csp = (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || "";
+    if (csp && !/fonts\.googleapis\.com/.test(csp)) return;
+    const l = document.createElement("link");
+    l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap";
+    document.head.appendChild(l);
+  };
+  const apply = () => {
+    for (const [k] of OPTS) root.classList.toggle("a11y-" + k, on(k));
+    if (on("read")) loadFont();
+    if (sayBtn) sayBtn.hidden = !on("say");
+    if (!on("say")) stop();
+  };
+  const set = (k, v) => {
+    S[k] = !!v;
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { /* 保存できなくても今の画面には効かせる */ }
+    apply();
+    document.dispatchEvent(new CustomEvent("a11ychange", { detail: { key: k, on: !!v } }));
+  };
+
+  // 読み上げ：端末の中の日本語の声だけを使う（外へ文字を送る声は使わない）
+  const voice = () => { try { return speechSynthesis.getVoices().find((v) => /^ja/i.test(v.lang) && v.localService) || null; } catch { return null; } };
+  const stop = () => { try { speechSynthesis.cancel(); } catch { /* 無い端末 */ } };
+  const visible = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && !el.closest("[hidden],[aria-hidden=true],[inert]"); };
+  const sayText = () => [...document.querySelectorAll("[data-a11y-say]")].filter(visible).map((el) => (el.getAttribute("aria-label") || el.innerText || "").trim()).filter(Boolean).join("。");
+  const say = (text) => {
+    const v = voice();
+    if (!v || !text) return false;
+    stop();
+    const u = new SpeechSynthesisUtterance(text.slice(0, 600));
+    u.voice = v; u.lang = v.lang; u.rate = 0.95;
+    speechSynthesis.speak(u);
+    return true;
+  };
+
+  let dlg = null, sayBtn = null, lastFocus = null;
+  const build = () => {
+    dlg = document.createElement("dialog");
+    dlg.className = "a11y-dlg";
+    dlg.setAttribute("aria-labelledby", "a11y-h");
+    const hasRuby = !!document.querySelector("ruby.a11y-rb");
+    dlg.innerHTML = `<h2 id="a11y-h">見やすさ・読みやすさ</h2><p>ほかのゲームにも同じ設定が使われます。文字は2本の指で広げると大きくなります。</p>` +
+      OPTS.filter(([k]) => k !== "ruby" || hasRuby).map(([k, n, d]) => `<label><input type="checkbox" data-k="${k}"><span>${n}<small>${d}</small></span></label>`).join("") +
+      `<p class="a11y-note" id="a11y-novoice" hidden>この端末には、外へ送らずに読める日本語の声がありません。</p><div class="a11y-row"><button type="button" class="a11y-ok" data-a11y-close>閉じる</button></div>`;
+    document.body.appendChild(dlg);
+    dlg.addEventListener("change", (e) => {
+      const k = e.target.dataset && e.target.dataset.k;
+      if (!k) return;
+      set(k, e.target.checked);
+      if (k === "say") dlg.querySelector("#a11y-novoice").hidden = !(e.target.checked && !voice());
+    });
+    dlg.querySelector("[data-a11y-close]").addEventListener("click", () => dlg.close());
+    dlg.addEventListener("close", () => { if (lastFocus && lastFocus.focus) lastFocus.focus(); });
+    sayBtn = document.createElement("button");
+    sayBtn.type = "button"; sayBtn.className = "a11y-saybtn"; sayBtn.textContent = "🔊 読む"; sayBtn.setAttribute("aria-label", "画面の問題を読み上げる");
+    sayBtn.addEventListener("click", () => {
+      try { if (speechSynthesis.speaking) return stop(); } catch { /* 無い端末 */ }
+      if (!say(sayText())) open();
+    });
+    document.body.appendChild(sayBtn);
+    if (!document.querySelector("[data-a11y-open]")) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "a11y-btn a11y-float"; b.textContent = "Aa"; b.setAttribute("data-a11y-open", ""); b.setAttribute("aria-label", "見やすさの設定");
+      document.body.appendChild(b);
+    }
+    document.addEventListener("click", (e) => { const t = e.target.closest && e.target.closest("[data-a11y-open]"); if (t) { e.preventDefault(); open(); } });
+    apply();
+  };
+  const open = () => {
+    if (!dlg) build();
+    lastFocus = document.activeElement;
+    for (const c of dlg.querySelectorAll("input[data-k]")) c.checked = on(c.dataset.k);
+    dlg.querySelector("#a11y-novoice").hidden = !(on("say") && !voice());
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+  };
+  apply();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
+  window.A11y = { on, set, open, say, stop };
+})();
+</script>
+<!-- a11y:end -->
 </head>
 <body>
 <div class="wrap" id="app"></div>
+<div id="live" class="sr" role="status" aria-live="polite"></div>
 <dialog id="howto" aria-labelledby="howto-t">
   <h2 id="howto-t">遊び方</h2>
   <ol>
@@ -205,6 +359,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
   <p>例：上「史」・左「向」・右「昇」・下「位」なら、まんなかは「上」（史上・向上・上昇・上位）。</p>
   <p>今日の3問はだれでも同じで1日1回。時間制限はありません。熟語は JMdict（EDRDG）から選んでいます。</p>
   <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
+  <p><a href="#" data-a11y-open>見やすさ・読みやすさの設定（文字・色・動き・読み上げ）</a></p>
   <button class="main" id="howto-ok" style="width:100%">わかった</button>
 </dialog>
 <script src="data.js"></script>
@@ -242,7 +397,7 @@ function tilesOf(p, n) { return shuffled([p.x, ...p.d.slice(0, n - 1)], rng(seed
 const maskOf = (p, ch) => (ch === p.x ? 15 : window.MK_WORDS ? dictMask(p, ch) : p.m[p.d.indexOf(ch)] || 0); // 打った字はどれでも辞書で確かめる（まちがいの札の印 m と同じ辞書）
 const bits = (m) => [1, 2, 4, 8].filter((b) => m & b).length;
 const starsOf = (m) => (m === 0 ? 3 : m === 1 ? 2 : 1); // m = まちがい＋ヒント
-const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
+const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"☆".repeat(3 - s)}</span></span>`; // 取れていない星は ☆（色の濃さだけで分けない）
 
 // ---- 記録（この端末の localStorage だけ）----
 // 進行中の遊びはモードごとに分けて持つ（練習を始めても今日・上級の途中経過を消さない）
@@ -305,8 +460,10 @@ const nextLine = (s) => { const nx = nextAch(s); return nx ? `<p class="achnext"
 
 // ---- 画面 ----
 const md = (k) => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
-function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); }
-const buzz = (n = 12) => { try { navigator.vibrate && navigator.vibrate(n); } catch (e) {} };
+function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1800); tell(t); }
+const calm = () => !!(window.A11y && A11y.on("calm"));
+const tell = (t) => { const l = $("live"); if (!l) return; l.textContent = ""; setTimeout(() => { l.textContent = t; }, 30); }; // 読み上げソフトへの知らせ（#live は role=status。同じ文でも読むよう一度空にする）
+const buzz = (n = 12) => { if (calm()) return; try { navigator.vibrate && navigator.vibrate(n); } catch (e) {} }; // 動きを減らす設定では振動させない
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
@@ -324,7 +481,7 @@ function boardHtml(p, center, opt = {}) {
     return `<div class="cell" data-pos="${pos}"><div class="k">${ch[pos]}${mk}</div>${yo}</div>`;
   };
   const arrow = (pos, s) => `<div class="ar ${pos}${opt.mask == null ? "" : opt.mask & (1 << POS.indexOf(pos)) ? " ok" : " ng"}" aria-hidden="true">${s}</div>`;
-  return `<div class="board" role="img" aria-label="上「${ch.t}」左「${ch.l}」右「${ch.r}」下「${ch.b}」のまんなかに入る字">${[null, "t", null, "l", "c", "r", null, "b", null].map(cell).join("")}${arrow("t", "↓")}${arrow("l", "→")}${arrow("r", "→")}${arrow("b", "↓")}</div>`;
+  return `<div class="board" role="img" data-a11y-say aria-label="上「${ch.t}」左「${ch.l}」右「${ch.r}」下「${ch.b}」のまんなかに入る字">${[null, "t", null, "l", "c", "r", null, "b", null].map(cell).join("")}${arrow("t", "↓")}${arrow("l", "→")}${arrow("r", "→")}${arrow("b", "↓")}</div>`;
 }
 
 function home() {
@@ -347,6 +504,7 @@ function home() {
     <div class="stats"><div><b>${playedDays(s).length}</b><small>といた日</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の字</small></div><div><b>${achGot(s).length}</b><small>実績</small></div></div>
     <p class="rank">称号：${rankOf(n)}${nr ? `（あと${nr[0] - n}字で${nr[1]}）` : ""}${st >= 1 ? `<br><span class="streak">連続${st}日</span>` : ""}</p>
     <div class="row"><button class="sub" id="go-ach">🏅 実績 ${achGot(s).length}/${ACH.length}</button><button class="sub" id="go-cal">📅 記録</button></div>
+    <button class="sub" id="go-a11y" data-a11y-open>Aa 見やすさ・読みやすさ</button>
     ${footer()}`;
   $("go-d").onclick = () => (k !== todayKey() ? home() : done ? result("d", k) : startRun("d")); // 画面を開いたまま0時を過ぎたら、今日の状態に描き直す
   if ($("go-h")) $("go-h").onclick = () => (hdone ? result("h", k) : k === todayKey() ? startRun("h") : home()); // 画面を開いたまま0時を過ぎたら、翌日の上級は始めない
@@ -419,7 +577,7 @@ function play() {
       <span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}/${run.list.length}</span></header>`}
     <div id="bd">${boardHtml(p, "")}</div>
     <div class="ansrow" id="inp"><input id="ans" type="text" lang="ja" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="12" placeholder="まんなかの漢字" aria-label="まんなかに入る漢字"><button class="main" id="go" type="button">決める</button></div>
-    <div id="near"></div>
+    <div id="near" data-a11y-say></div>
     <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
     <div class="tried" id="tried"></div>
     <div class="tiles" id="cands" hidden></div>
@@ -457,7 +615,7 @@ function paintTried(repaint) { // repaint：ヒントを出したとき・開き
   if (repaint && cur.hints && !cur.done) { $("bd").innerHTML = boardHtml(p, "", { yomi: p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) }); }
   // 最後のヒント：候補を4つ（答えと、まちがいの札3枚。並びは問題ごとに決まる）。上級は出さない
   const cd = $("cands");
-  if (!cur.hard && cur.hints >= 3 && !cur.done) { cd.hidden = false; cd.innerHTML = tilesOf(p, 4).map((ch) => `<button class="tile${cur.tried.includes(ch) ? " out" : ""}" data-ch="${ch}" aria-label="${ch}"${cur.tried.includes(ch) ? " disabled" : ""}>${ch}${cur.tried.includes(ch) ? `<small>${bits(maskOf(p, ch))}/4</small>` : ""}</button>`).join(""); cd.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch))); }
+  if (!cur.hard && cur.hints >= 3 && !cur.done) { cd.hidden = false; cd.innerHTML = tilesOf(p, 4).map((ch) => `<button class="tile${cur.tried.includes(ch) ? " out" : ""}" data-ch="${ch}" aria-label="${ch}${cur.tried.includes(ch) ? `（試した・${bits(maskOf(p, ch))}/4）` : ""}"${cur.tried.includes(ch) ? " disabled" : ""}>${ch}${cur.tried.includes(ch) ? `<small>${bits(maskOf(p, ch))}/4</small>` : ""}</button>`).join(""); cd.querySelectorAll(".tile").forEach((b) => (b.onclick = () => guess(b.dataset.ch))); }
   else cd.hidden = true;
   const h = $("hint"); if (h) { h.disabled = cur.hints >= MAXH(cur.hard ? "h" : "d") || cur.done || (MODE === "e" && lifeOf() <= 0); h.textContent = MODE === "e" ? (cur.hints >= 2 ? "候補 🎫1" : "ヒント 🎫1") : (cur.hints >= 2 ? "候補から選ぶ" : "ヒント（読み）"); }
 }
@@ -476,6 +634,7 @@ function guess(ch) {
     $("bd").innerHTML = boardHtml(p, esc(ch), { mask: m, yomi: cur.hints ? p.r.map((r, j) => (j < Math.min(cur.hints, 2) ? r : "")) : null });
     $("ctr").classList.add("bad");
     $("near").innerHTML = `<div class="near">「<b>${esc(ch)}</b>」なら ${n ? `${n}つ熟語になる。${n >= 3 ? "惜しい！" : ""}` : "どれも熟語にならない"}</div>`;
+    tell(`まちがい。「${ch}」なら4つのうち${n}つ熟語になる。${POS.map((q, j) => `${["上", "左", "右", "下"][j]}${m & (1 << j) ? "○" : "×"}`).join("・")}`);
     paintTried();
     setTimeout(() => { if ($("ctr") && !cur.done) $("ctr").classList.remove("bad"); }, 450);
     return;
@@ -505,7 +664,8 @@ function guess(ch) {
   if ($("quit")) $("quit").textContent = `ここで降りる（${cur.i + 1}問で終える）`;
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   $("next").onclick = play;
-  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
+  tell(`正解「${ch}」。星${st}つ。${ws.join("・")}`);
+  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: calm() ? "auto" : "smooth", block: "nearest" }), 60);
 }
 
 function finish() {
@@ -592,8 +752,8 @@ function dex(sel) {
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>漢字帳<small>${got.length}/${P.length}字・★3 ${Object.values(s.dex).filter((x) => x >= 3).length}</small></h1><span></span></header>
     ${p ? `<div class="sheet">${boardHtml(p, p.x, { yomi: p.r })}<div class="words">${p.w.map((w, j) => `<div><b>${w}</b><span>${p.r[j]}</span></div>`).join("")}</div><div style="text-align:center">${starStr(s.dex[p.x])}</div></div>`
-      : `<p class="note">といた字が集まります（朱は★3）。字を押すと、その問題の熟語と読みが見られます。</p>`}
-    <div class="dex">${got.length ? got.map((q) => `<button data-i="${q.id}" class="s${s.dex[q.x]}" aria-label="${q.x}">${q.x}</button>`).join("") : ""}</div>
+      : `<p class="note">といた字が集まります（隅の★は星の数。朱の塗りは★3）。字を押すと、その問題の熟語と読みが見られます。</p>`}
+    <div class="dex">${got.length ? got.map((q) => `<button data-i="${q.id}" class="s${s.dex[q.x]}" data-st="★${s.dex[q.x]}" aria-label="${q.x}（星${s.dex[q.x]}つ）">${q.x}</button>`).join("") : ""}</div>
     ${got.length ? "" : `<p class="note">まだありません。今日の3問か練習で集めましょう。</p>`}
     ${footer()}`;
   $("back").onclick = home;
@@ -605,7 +765,7 @@ function dex(sel) {
 function achView() {
   const s = load(), got = achGot(s);
   app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>実績<small>${got.length}/${ACH.length}</small></h1><span></span></header>
-    <div class="achs">${ACH.map((a) => { const [n, g] = achProg(s, a), ok = n >= g; return `<div class="ach${ok ? " got" : ""}" data-id="${a[0]}"><span class="ic">🏅</span><b>${a[1]}</b><span class="kd">${a[3]}</span><small>${a[2]}</small>${ok ? "" : `<span class="pg"><i><span style="width:${Math.round(n / g * 100)}%"></span></i>${n}/${g}</span>`}</div>`; }).join("")}</div>
+    <div class="achs">${ACH.map((a) => { const [n, g] = achProg(s, a), ok = n >= g; return `<div class="ach${ok ? " got" : ""}" data-id="${a[0]}"><span class="ic" aria-hidden="true">🏅</span><b>${ok ? "✓ " : ""}${a[1]}</b><span class="kd">${a[3]}</span><small>${a[2]}</small>${ok ? "" : `<span class="pg"><i><span style="width:${Math.round(n / g * 100)}%"></span></i>${n}/${g}</span>`}</div>`; }).join("")}</div>
     ${footer()}`;
   $("back").onclick = home; bindFooter(); window.scrollTo(0, 0);
 }
