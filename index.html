@@ -151,6 +151,7 @@ footer a{color:var(--ink2);min-height:44px;display:inline-flex;align-items:cente
 .tiles#cands{grid-template-columns:repeat(4,1fr)}
 .note.alt{color:var(--ok);font-weight:700}
 /* 実績・記録（カレンダー） */
+.achnext{text-align:center;font-size:13px;color:var(--ink2,#666);margin:0}
 .achnew{background:#fff6e0;border:1px solid var(--near);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;margin:0;text-align:center}
 .achs{display:flex;flex-direction:column;gap:8px}
 .ach{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:34px 1fr auto;gap:2px 10px;align-items:center}
@@ -290,6 +291,13 @@ const achGot = (s) => ACH.filter((a) => { const [n, g] = achProg(s, a); return n
 // 新しく取れた実績を「見せた」印（ach）に入れて返す（save の中で呼ぶ）
 function claimAch(s) { s.ach = s.ach || {}; const n = achGot(s).filter((id) => !s.ach[id]); n.forEach((id) => (s.ach[id] = 1)); return n; }
 const achLine = (ids) => (ids && ids.length ? `<p class="achnew" role="status">🏅 実績：${ids.map((id) => ACH.find((a) => a[0] === id)[1]).join("・")}</p>` : "");
+// あと少しの実績：まだの実績のうち、いちばん目標に近いもの1つ（ゴールに近いほど人はがんばる。Kivetz ほか 2006）
+function nextAch(s) {
+  let best = null;
+  for (const a of ACH) { const [n, g] = achProg(s, a); if (!(n > 0) || n >= g) continue; const r = n / g, left = g - n; if (!best || r > best.r || (r === best.r && left < best.left)) best = { id: a[0], name: a[1], n, goal: g, left, r }; }
+  return best;
+}
+const nextLine = (s) => { const nx = nextAch(s); return nx ? `<p class="achnext" id="achnext">🎯 次の実績「${nx.name}」まで あと${nx.left}（${nx.n}/${nx.goal}）</p>` : ""; };
 
 // ---- 画面 ----
 const md = (k) => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
@@ -519,6 +527,7 @@ function result(mode, k, first, prec) {
     <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>まんなか漢字<small>${mode === "d" ? `今日の3問 #${dayNo(k)}` : mode === "a" ? `#${dayNo(k)} あとから` : mode === "h" ? "上級" : "練習"}</small></h1><span></span></header>
     <p class="big">${total === 0 ? "全問一発！" : `まちがい・ヒント ${total}`}</p>
     ${achLine(newA)}
+    ${nextLine(s)}
     <div class="rlist">${list.map((id, j) => { const p = P[id]; return `<div><span class="x">${p.x}</span><span class="w"><b>${p.w.join("・")}</b><br>${starStr(starsOf(rec.m[j]))} ${mode === "h" ? "むずかしい" : LV[p.t]}</span></div>`; }).join("")}</div>
     ${mode !== "p" ? `<div class="share">${esc(text)}</div>
     <button class="main" id="share">結果をシェア</button>
@@ -595,7 +604,7 @@ function calView(ym) {
   bindFooter(); window.scrollTo(0, 0);
 }
 
-window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey };
+window.__mk = { mode: () => MODE, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey, nextAch, achProg_: achProg };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
