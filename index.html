@@ -397,7 +397,7 @@ const CYC = new Map(), cycOf = (t, c) => { const k = t + ":" + c; if (!CYC.has(k
 function nth(t, idx) { const L = POOL[t].length; return cycOf(t, Math.floor(idx / L))[idx % L]; }
 // 性別に寄った言葉（gender-ng.js）を、画面に出す所（答え・4つの熟語・読み・札）に含む問題は、CUTOFF の日からの今日の3問・上級と、とことん・練習で選ばない（過去の日の問題はそのまま。satou さん 2026-11-06 のカード）
 const CUTOFF = "2026-11-07";
-const NG = (window.MK_NG || []).map((w) => (/^[A-Za-z]+$/.test(w) ? new RegExp("(?<![A-Za-z])" + w + "(?![A-Za-z])") : new RegExp(w)));
+const NG = (window.MK_NG || []).map((w) => (/^[A-Za-z]+$/.test(w) ? new RegExp("(^|[^A-Za-z])" + w + "(?![A-Za-z])") : new RegExp(w)));
 const shownOf = (p) => [p.x, ...p.w, ...p.r, ...p.d].join("|");
 const NGID = new Set(P.filter((p) => NG.some((re) => re.test(shownOf(p)))).map((p) => p.id));
 const OKPOOL = POOL.map((pool) => pool.filter((id) => !NGID.has(id)));
