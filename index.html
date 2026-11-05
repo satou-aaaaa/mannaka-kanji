@@ -346,6 +346,8 @@ html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!i
 })();
 </script>
 <!-- a11y:end -->
+<!-- 引き継ぎコード（shared-workflows template/transfer.js の写し）。ゲームの script より前に置く -->
+<script src="transfer.js" data-game="mannaka-kanji" data-keys="mannaka-v1"></script>
 </head>
 <body>
 <div class="wrap" id="app"></div>
@@ -467,7 +469,7 @@ const calm = () => !!(window.A11y && A11y.on("calm"));
 const tell = (t) => { const l = $("live"); if (!l) return; l.textContent = ""; setTimeout(() => { l.textContent = t; }, 30); }; // 読み上げソフトへの知らせ（#live は role=status。同じ文でも読むよう一度空にする）
 const buzz = (n = 12) => { if (calm()) return; try { navigator.vibrate && navigator.vibrate(n); } catch (e) {} }; // 動きを減らす設定では振動させない
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" data-hk>引き継ぎ</a><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
 $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
