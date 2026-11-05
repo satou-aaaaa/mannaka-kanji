@@ -2,6 +2,7 @@
 // 使い方: node qa/run.mjs   失敗があれば終了コード 1。結果は qa-report/report.md。
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import vm from "node:vm";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
@@ -98,7 +99,11 @@ try {
     // 1周（その難しさの問題数）のうちは同じ問題が出ない
     // むずかしいは今日の3問目と上級の3問で1日4問ずつ使う。使う順に並べて、1周（問題数）ごとに重ならないかを見る
     seen[2] = seen.h;
-    [0, 1, 2].forEach((t) => { const L = g.POOL[t].length; for (let i = 0; i + L <= seen[t].length; i += L) if (new Set(seen[t].slice(i, i + L)).size !== L) out.dup++; });
+    // 2026-11-07（CUTOFF）からは外す問題を飛ばすので、区切りの日の周の残り（g0）と、そのあとの周（外したあとの問題数 G）ごとに見る
+    [0, 1, 2].forEach((t) => { const L = g.POOL[t].length, G = g.OKPOOL[t].length, cut = g.cutAt(t), g0 = g.cycOf(t, Math.floor(cut / L)).slice(cut % L).filter((id) => !g.NGID.has(id)).length;
+      const pre = Math.floor(cut / L) * L; for (let i = 0; i + L <= pre; i += L) if (new Set(seen[t].slice(i, i + L)).size !== L) out.dup++;
+      const c0 = cut - pre + g0; if (new Set(seen[t].slice(pre, pre + c0)).size !== c0) out.dup++;
+      for (let i = pre + c0; i + G <= seen[t].length; i += G) if (new Set(seen[t].slice(i, i + G)).size !== G) out.dup++; });
     out.d1201 = JSON.stringify(g.dailyList("2026-12-01"));
     out.tiles = g.P.every((p) => { const a = g.tilesOf(p, 9), b = g.tilesOf(p, 12); return a.includes(p.x) && b.includes(p.x) && new Set(a).size === 9 && new Set(b).size === 12 && JSON.stringify(a) === JSON.stringify(g.tilesOf(p, 9)); });
     out.pos = [0, 1, 2, 3, 4, 5, 6, 7, 8].map((j) => g.P.filter((p) => g.tilesOf(p, 9)[j] === p.x).length);
@@ -115,6 +120,40 @@ try {
     check("同じ日は別のブラウザで開いても同じ3問", sel.d1201 === d2); }
   check("札は答えを含み、9枚・12枚とも重ならず、問題ごとに並びが決まる", sel.tiles);
   check("答えの札の場所が偏らない（どの場所も 5〜20%）", sel.pos.every((n) => n >= P.length * 0.05 && n <= P.length * 0.2), sel.pos.join(","));
+
+  { // 性別に寄った言葉（gender-ng）：2026-11-07 からの問題・とことん・練習では選ばない。過去の日（〜2026-11-06）の問題はそのまま（satou さん 2026-11-06 のカード）
+    const sg = { window: {} }; vm.runInNewContext(readFileSync(path.join(root, "gender-ng.js"), "utf8"), sg); const NGW = sg.window.MK_NG;
+    const tw = readFileSync(path.join(root, "qa/a11y.mjs"), "utf8").match(/const WORDS = (\[[\s\S]*?\n\]);/);
+    const TW = tw ? vm.runInNewContext(tw[1]).map((x) => x[0]) : [];
+    check("gender-ng.js の一覧は qa/a11y.mjs（shared-workflows template）の WORDS と同じ", TW.length > 0 && JSON.stringify([...NGW]) === JSON.stringify(TW), `${NGW.length}語・${TW.length}語`);
+    const res = NGW.map((w) => (/^[A-Za-z]+$/.test(w) ? new RegExp("(?<![A-Za-z])" + w + "(?![A-Za-z])") : new RegExp(w)));
+    const bad = (text) => res.some((re) => re.test(text));
+    const g = await page.evaluate(() => { const g = window.__mk, day = (n) => new Date(Date.parse(g.CUTOFF) + n * 864e5).toISOString().slice(0, 10);
+      const view = (id) => { const p = g.P[id]; return [p.x, ...p.w, ...p.r, ...g.tilesOf(p, 4)].join("|"); }; // 画面に出る所（答え・4つの熟語・読み・候補の札）
+      const pre = []; for (let n = -400; n < 0; n++) { const k = day(n); pre.push([k, g.dailyList(k), g.hardList(k)]); }
+      const post = []; for (let n = 0; n < 1096; n++) { const k = day(n); post.push([k, [...g.dailyList(k), ...g.hardList(k)].map(view).join("||")]); }
+      const ends = []; for (let n = 0; n < 500; n++) ends.push(g.endlessList().map(view).join("||"));
+      return { cutoff: g.CUTOFF, ngid: [...g.NGID], pre, post, ends, ok: g.OKPOOL.map((x) => x.length), all: g.P.map((p) => [p.x, ...p.w, ...p.r, ...p.d].join("|")) }; });
+    const mine = g.all.map((t, i) => (bad(t) ? i : -1)).filter((i) => i >= 0);
+    check("区切りの日は 2026-11-07・外す問題は画面に出る所のどこかに一覧の言葉を含む問題（ページと検査で同じ）", g.cutoff === "2026-11-07" && JSON.stringify(mine) === JSON.stringify(g.ngid.sort((a, b) => a - b)) && mine.length > 0, `${mine.length}問：${mine.map((i) => P[i].x).join("")}（残り ${g.ok.join("・")}）`);
+    // 区切りの日より前は、今の main の版と1字も変わらない。CI の checkout には main が無いことがあるので、main で数えた表（第1日〜11-06。第1日より前は第1日と同じ）でも見る
+    const FIX = { "2026-11-04": [[143, 371, 755], [697, 749, 481]], "2026-11-05": [[142, 366, 698], [699, 629, 560]], "2026-11-06": [[134, 285, 689], [530, 708, 542]] };
+    check("区切りの日より前の400日（〜2026-11-06）の今日の3問・上級は main で数えた表と同じ", g.pre.every(([k, d, h]) => JSON.stringify([d, h]) === JSON.stringify(FIX[k < "2026-11-04" ? "2026-11-04" : k])));
+    let mainSrc = null; try { const tmp = path.join(root, "qa-report", "main-src"); mkdirSync(tmp, { recursive: true });
+      for (const f of ["index.html", "data.js", "words.js", "transfer.js"]) writeFileSync(path.join(tmp, f), execFileSync("git", ["show", `origin/main:${f}`], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }));
+      try { writeFileSync(path.join(tmp, "gender-ng.js"), execFileSync("git", ["show", "origin/main:gender-ng.js"], { cwd: root, stdio: ["ignore", "pipe", "ignore"] })); } catch (e) {}
+      mainSrc = pathToFileURL(path.join(tmp, "index.html")).href; } catch (e) {}
+    if (mainSrc) { const pm = await browser.newPage(); await pm.goto(mainSrc);
+      const old = await pm.evaluate((ks) => { const g = window.__mk; return ks.map((k) => [k, g.dailyList(k), g.hardList(k)]); }, g.pre.map((x) => x[0])); await pm.close();
+      check("区切りの日より前の400日（〜2026-11-06）の今日の3問・上級は今の main の版（git show origin/main）と完全に同じ", JSON.stringify(old) === JSON.stringify(g.pre)); }
+    else check("区切りの日より前の400日は今の main の版と同じ（origin/main が無いので main で数えた表で確かめた）", true, "origin/main なし");
+    const hit = g.post.filter(([, t]) => bad(t));
+    check("区切りの日から3年分の今日の3問・上級に、外す言葉が画面に出る所（答え・熟語・読み・候補の札）のどこにも無い", hit.length === 0, hit.slice(0, 3).map((x) => x[0]).join(","));
+    check("とことんを500回作っても外す言葉が出ない", !g.ends.some(bad));
+    const pp = await newPage(); await pp.click("#howto-ok");
+    const prac = await pp.evaluate(() => { const g = window.__mk, out = []; for (let n = 0; n < 300; n++) { g.startRun("p", n % 3); out.push(g.load().runs.p.list.map((id) => { const q = g.P[id]; return [q.x, ...q.w, ...q.r, ...g.tilesOf(q, 4)].join("|"); }).join("||")); } return out; });
+    await pp.close();
+    check("練習を300回始めても外す言葉が出ない", prac.length === 300 && !prac.some(bad)); }
 
   // 3. 通しで遊ぶ
   check("初めて開くと遊び方が出る", await page.locator("#howto[open]").count() === 1);

@@ -10,8 +10,9 @@
 - 4つの熟語はどれも JMdict のよく使う語（ichi1・news1・spec1 の印）で、字はすべて常用漢字。
 - 答えは1つ：X 以外のどの字を入れても、4つすべてが JMdict の語（よく使う語に限らない）になることはない。
 - 数字だけの語・つらい言葉（死・殺など）は使わない。
+- 性別に寄った言葉（gender-ng.js の一覧。shared-workflows template/qa/a11y.mjs の WORDS）は、熟語にも札にも使わない。
 """
-import sqlite3, collections, json, random, sys
+import sqlite3, collections, json, os, random, re, sys
 
 if len(sys.argv) < 2:
     sys.exit("使い方: python3 tools/make-data.py <jamdict.db>")
@@ -21,6 +22,10 @@ JOYO = {k for k, g in grade.items() if g in ("1", "2", "3", "4", "5", "6", "8")}
 NUM = set("一二三四五六七八九十百千万億兆零")
 NG = set("死殺葬屍姦淫娼尿糞呪遺棺骸刑獄墓弔喪病癌毒虐暴拷凶犯罪賊奴隷")
 isk = lambda ch: "一" <= ch <= "鿿"
+# 性別に寄った言葉（gender-ng.js の一覧を読む。2026-11-06 satou さんのカード）
+_ng = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "gender-ng.js"), encoding="utf8").read()
+GNG = json.loads(re.search(r"window\.MK_NG = (\[[\s\S]*?\]);", _ng).group(1))
+gng = lambda t: any(w in t for w in GNG)
 
 rows = c.execute("select id, text, idseq from Kanji").fetchall()
 broad = {t for _, t, _ in rows if len(t) == 2 and isk(t[0]) and isk(t[1])}
@@ -35,7 +40,7 @@ common = {}  # 語 -> (よく使う順の目安 1〜48、読み)
 for kid, t, seq in rows:
     if t not in broad or not (pri[kid] & {"ichi1", "news1", "spec1"}):
         continue
-    if not (t[0] in JOYO and t[1] in JOYO) or (t[0] in NUM and t[1] in NUM) or (set(t) & NG):
+    if not (t[0] in JOYO and t[1] in JOYO) or (t[0] in NUM and t[1] in NUM) or (set(t) & NG) or gng(t):
         continue
     nf = [int(p[2:]) for p in pri[kid] if p.startswith("nf")]
     score = min(nf) if nf else 30
@@ -51,9 +56,11 @@ for w in broad:
     bb[w[1]].add(w[0]); aa[w[0]].add(w[1])
 
 R = random.Random(20261104)
-pool_decoy = sorted(k for k in JOYO if grade[k] in ("1", "2", "3", "4", "5", "6") and k not in NUM and k not in NG)
+pool_decoy = sorted(k for k in JOYO if grade[k] in ("1", "2", "3", "4", "5", "6") and k not in NUM and k not in NG and not gng(k))
 out = []
 for X in sorted(JOYO - NUM - NG):
+    if gng(X):
+        continue
     As = sorted(before[X] - {X}, key=lambda a: (common[a + X][0], a))[:8]
     Cs = sorted(after[X] - {X}, key=lambda d: (common[X + d][0], d))[:8]
     best = None
@@ -76,7 +83,7 @@ for X in sorted(JOYO - NUM - NG):
     used = {A, B, C2, D2, X}
     def mask(Y):
         return (A + Y in broad) | (B + Y in broad) << 1 | (Y + C2 in broad) << 2 | (Y + D2 in broad) << 3
-    near = [(bin(m).count("1"), Y, m) for Y in sorted(JOYO - NG - NUM - used) for m in [mask(Y)] if m]
+    near = [(bin(m).count("1"), Y, m) for Y in sorted(JOYO - NG - NUM - used) if not gng(Y) for m in [mask(Y)] if m]
     near.sort(key=lambda t: (-t[0], t[1]))
     strong = [(Y, m) for _, Y, m in near[:12]]
     R.shuffle(strong)

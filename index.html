@@ -371,6 +371,7 @@ html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!i
   <button class="main" id="howto-ok" style="width:100%">わかった</button>
 </dialog>
 <script src="data.js"></script>
+<script src="gender-ng.js"></script>
 <script src="words.js"></script>
 <script>
 "use strict";
@@ -392,14 +393,24 @@ function seedOf(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charC
 function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function shuffled(arr, R) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 // 難しさごとの問題を、周ごとに混ぜた順で1日 n 問ずつ使う（1周するまで同じ問題は出ない）
-function nth(t, idx) { const pool = POOL[t], cyc = Math.floor(idx / pool.length); return shuffled(pool, rng(seedOf("cycle" + t + ":" + cyc)))[idx % pool.length]; }
+const CYC = new Map(), cycOf = (t, c) => { const k = t + ":" + c; if (!CYC.has(k)) CYC.set(k, shuffled(POOL[t], rng(seedOf("cycle" + t + ":" + c)))); return CYC.get(k); };
+function nth(t, idx) { const L = POOL[t].length; return cycOf(t, Math.floor(idx / L))[idx % L]; }
+// 性別に寄った言葉（gender-ng.js）を、画面に出す所（答え・4つの熟語・読み・札）に含む問題は、CUTOFF の日からの今日の3問・上級と、とことん・練習で選ばない（過去の日の問題はそのまま。satou さん 2026-11-06 のカード）
+const CUTOFF = "2026-11-07";
+const NG = (window.MK_NG || []).map((w) => (/^[A-Za-z]+$/.test(w) ? new RegExp("(?<![A-Za-z])" + w + "(?![A-Za-z])") : new RegExp(w)));
+const shownOf = (p) => [p.x, ...p.w, ...p.r, ...p.d].join("|");
+const NGID = new Set(P.filter((p) => NG.some((re) => re.test(shownOf(p)))).map((p) => p.id));
+const OKPOOL = POOL.map((pool) => pool.filter((id) => !NGID.has(id)));
+// CUTOFF からは同じ並び（周ごとに混ぜた順）を CUTOFF の日の位置から読み、外す問題だけ飛ばす（1周するまで同じ問題は出ない。日付の種だけで決まる）
+function nthOk(t, cut, n) { const L = POOL[t].length, G = OKPOOL[t].length; let c = Math.floor(cut / L), cy = cycOf(t, c); for (let i = cut % L; i < L; i++) if (!NGID.has(cy[i]) && n-- === 0) return cy[i]; c += 1 + Math.floor(n / G); n %= G; cy = cycOf(t, c); for (const id of cy) if (!NGID.has(id) && n-- === 0) return id; }
 // むずかしいは1日4問ずつ使う（今日の3問目に1問・上級に3問。同じ日に重ならない）
 const dayIdx = (k) => Math.max(0, dayNo(k) - 1);
-const dailyList = (k) => [nth(0, dayIdx(k)), nth(1, dayIdx(k)), nth(2, dayIdx(k) * 4)];
-const hardList = (k) => { const d = nth(2, dayIdx(k) * 4), out = []; for (let j = 1; out.length < 3; j++) { const x = nth(2, dayIdx(k) * 4 + j); if (x !== d && !out.includes(x)) out.push(x); } return out; }; // 1周の切れ目をまたぐ日は、前後の周で同じものが選ばれることがある。今日の最後の1問や、もう選んだものと重なったら次の番号から選ぶ
+const cutAt = (t) => dayIdx(CUTOFF) * (t === 2 ? 4 : 1), at = (t, idx, k) => (k < CUTOFF ? nth(t, idx) : nthOk(t, cutAt(t), idx - cutAt(t))); // CUTOFF より前の日は前と1字も変わらない
+const dailyList = (k) => [at(0, dayIdx(k), k), at(1, dayIdx(k), k), at(2, dayIdx(k) * 4, k)];
+const hardList = (k) => { const d = at(2, dayIdx(k) * 4, k), out = []; for (let j = 1; out.length < 3; j++) { const x = at(2, dayIdx(k) * 4 + j, k); if (x !== d && !out.includes(x)) out.push(x); } return out; }; // 1周の切れ目をまたぐ日は、前後の周で同じものが選ばれることがある。今日の最後の1問や、もう選んだものと重なったら次の番号から選ぶ
 // とことん：やさしい5問 → ふつう10問 → むずかしい45問の順に、毎回ちがう並びで出す（乱数は練習ととことんだけ）
 const ELIFE = 3, ERAMP = [[0, 5], [1, 10], [2, 45]];
-function endlessList() { const out = []; for (const [t, n] of ERAMP) { const pool = POOL[t].slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } out.push(...pool.slice(0, n)); } return out; }
+function endlessList() { const out = []; for (const [t, n] of ERAMP) { const pool = OKPOOL[t].slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } out.push(...pool.slice(0, n)); } return out; }
 // 札を並べる：答えと、まちがいの札（今日の3問は8枚・上級は11枚）。並びは問題ごとに決まる
 function tilesOf(p, n) { return shuffled([p.x, ...p.d.slice(0, n - 1)], rng(seedOf("tiles:" + p.id + ":" + n))); }
 const maskOf = (p, ch) => (ch === p.x ? 15 : window.MK_WORDS ? dictMask(p, ch) : p.m[p.d.indexOf(ch)] || 0); // 打った字はどれでも辞書で確かめる（まちがいの札の印 m と同じ辞書）
@@ -547,7 +558,7 @@ function startRun(mode, opt) {
     if (mode === "d") list = dailyList(k);
     else if (mode === "h") list = hardList(k);
     else if (typeof opt === "object") list = [opt.id];
-    else { const pool = POOL[opt].slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, 3); }
+    else { const pool = OKPOOL[opt].slice(); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, 3); }
     s.runs[mode] = { mode, date: k, list, res: [], cur: null, ...(mode === "p" ? { id: Date.now().toString(36) + "-" + performance.now().toFixed(3) } : {}) }; // 練習は始めるたびに見分ける（同じ問題をやり直しても、古い回と取り違えない）
   });
   MODE = mode;
@@ -805,7 +816,7 @@ function calView(ym) {
   bindFooter(); window.scrollTo(0, 0);
 }
 
-window.__mk = { mode: () => MODE, endlessList, ELIFE, ERAMP, cur: () => cur, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey, nextAch, achProg_: achProg };
+window.__mk = { mode: () => MODE, endlessList, CUTOFF, NGID, OKPOOL, cycOf, cutAt, shownOf, ELIFE, ERAMP, cur: () => cur, P, POOL, dailyList, hardList, tilesOf, maskOf, pickKanji, starsOf, seedOf, todayKey, dayNo, shareText, streak, load, play: (m) => { if (m) MODE = m; play(); }, ACH, achGot, achProg, missedDays, calView, achView, startRun, playedDays, aKey, nextAch, achProg_: achProg };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
