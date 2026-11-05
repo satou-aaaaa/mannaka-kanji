@@ -1,0 +1,14 @@
+{
+  "screens": [
+    { "name": "今日の3問", "click": ["#go-d"] },
+    { "name": "練習のヒントと候補", "click": ["#go-p", ".lv button[data-t='0']", "#hint", "#hint", "#hint"] },
+    { "name": "漢字帳", "click": ["#go-dex"] },
+    { "name": "実績", "click": ["#go-ach"] },
+    { "name": "記録", "click": ["#go-cal"] }
+  ],
+  "allowWords": [
+    { "word": "主婦", "reason": "JMdict（辞書）の熟語そのもの。問題（data.js の主・婦の問題）は make-data.py が作り、手で直すと過去の日の問題が変わる。辞書の語として出すだけで、役割を決めつける文には使っていない" },
+    { "word": "父兄", "reason": "JMdict（辞書）の熟語そのもの（data.js の兄の問題）。同上の理由で問題を作り直さない" },
+    { "word": "嫁", "reason": "words.js は打った字の判定に使う JMdict の2字語の一覧（画面には出さない）。手で直さない決まり" }
+  ]
+}
