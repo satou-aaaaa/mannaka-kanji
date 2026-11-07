@@ -162,7 +162,9 @@ try {
 
   // 3. 通しで遊ぶ
   check("初めて開くと遊び方が出る", await page.locator("#howto[open]").count() === 1);
-  await page.click("#howto-ok");
+  await page.keyboard.press("Escape"); await page.waitForTimeout(100); check("遊び方を Esc で閉じられる", await page.locator("#howto[open]").count() === 0);
+  await page.reload(); await page.waitForTimeout(200); check("遊び方を Esc で閉じても、開き直したとき出ない", await page.locator("#howto[open]").count() === 0);
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await page.click("#howto-ok"); await page.reload(); await page.waitForTimeout(200); check("遊び方を「わかった」で閉じてすぐ読み直しても出ない", await page.locator("#howto[open]").count() === 0);
   check("ホームの例の盤は遊び方と同じ（史・向・昇・位）", (await page.textContent(".hero .board")).replace(/[\s↓→]/g, "") === "史向？昇位");
   await page.click("#go-d");
   let p = await curP(page);
