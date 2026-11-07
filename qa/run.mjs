@@ -439,6 +439,26 @@ try {
     for (const go of ["#go-ach", "#go-cal", "#go-d", "#go-e", "#quit"]) { if (go !== "#quit") await pw.click("#back").catch(() => {}); await pw.click(go); const r = await pw.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) })); if (r.over || r.small.length) bad.push(go + ":" + r.small.join("/")); }
     check(`幅${w}px：実績・記録・結果・とことん（遊ぶ・終わり）の画面もはみ出さず、押せる所は44px以上`, bad.length === 0, bad.join(" "));
     await pw.close(); }
+  { // スマホで初めて遊ぶ人の使いやすさ（2026-11-07 UI/UX の見直し）
+    const wrapped = (pg) => pg.evaluate(() => [...document.querySelectorAll("#app button.main")].filter((b) => b.checkVisibility()).flatMap((b) => { const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT), out = []; for (let t; (t = w.nextNode());) { if (!t.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(t); const tops = new Set([...r.getClientRects()].map((x) => Math.round(x.top))); if (tops.size > 1) out.push(t.textContent.trim()); } return out; }));
+    for (const [w, h] of [[390, 844], [320, 640]]) {
+      const pu = await newPage(w, h); await pu.click("#howto-ok");
+      const wh = await wrapped(pu);
+      check(`幅${w}px：ホームの大きなボタンの字が途中で折れない（上級は「ヒント・候補なし」を小さく添える）`, wh.length === 0 && (await pu.textContent("#go-h small")) === "ヒント・候補なし", wh.join(" / "));
+      check(`幅${w}px：ホームの「今日の3問をとく」は最初の画面に入る`, await pu.evaluate((h) => { const r = document.getElementById("go-d").getBoundingClientRect(); return r.top >= 0 && r.bottom <= h; }, h));
+      await pu.click("#go-d");
+      check(`幅${w}px：はじめての一言は盤のすぐ下・入力欄の前にあり、最初の画面に入力欄まで入る`, await pu.evaluate((h) => { const t = document.querySelector("#app .hint"), i = document.getElementById("inp"); return !!t && !!(t.compareDocumentPosition(i) & Node.DOCUMENT_POSITION_FOLLOWING) && i.getBoundingClientRect().bottom <= h; }, h));
+      for (let j = 0; j < 3; j++) { const q = await curP(pu); if (j === 0) { await type(pu, q.d[0]); } await type(pu, q.x);
+        if (j === 0) check(`幅${w}px：正解のあとは押せないヒントのボタンを出さない（次へのボタンが近い）`, !(await pu.locator("#hint").isVisible()) && (await pu.locator("#next").isVisible()));
+        await pu.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await pu.click("#next"); }
+      check(`幅${w}px：結果の画面は上から始まる（前の画面のスクロールを持ち越さない）`, await pu.evaluate(() => window.scrollY === 0 && document.querySelector("header").getBoundingClientRect().top >= 0));
+      check(`幅${w}px：結果の見出しはとけた数・まちがいは小さく添える`, (await pu.textContent(".big")) === "3問 とけた" && (await pu.textContent("#rtotal")).includes("まちがい・ヒント 1回"));
+      check(`幅${w}px：結果の「続けて遊ぶ：とことん」は一覧のすぐ下（シェアより前）で、最初の画面に入る`, await pu.evaluate((h) => { const e = document.getElementById("go-e"), sh = document.querySelector(".share"); return !!(e.compareDocumentPosition(sh) & Node.DOCUMENT_POSITION_FOLLOWING) && e.getBoundingClientRect().bottom <= h; }, h));
+      const wr = await wrapped(pu);
+      check(`幅${w}px：結果の大きなボタンの字が途中で折れない`, wr.length === 0, wr.join(" / "));
+      await pu.click("#back");
+      check(`幅${w}px：結果からホームへ戻ると上から始まる`, await pu.evaluate(() => window.scrollY === 0));
+      await pu.close(); } }
   { // 色だけで分けない（WCAG 1.4.1。shared-workflows routines/game-dev.md A1・A7・A8）：状態は記号・文字・形・aria-label でも出て、知らせは #live（role=status）に文字で出る
     const pc = await newPage(390, 844);
     await pc.evaluate((K) => { localStorage.setItem(K, JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, late: {}, dex: {}, runs: {}, kofi: {}, ebest: 0 })); }, KEY); await pc.reload();

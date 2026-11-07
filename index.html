@@ -44,6 +44,9 @@ h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--i
 .dots i{flex:1;height:6px;border-radius:3px;background:transparent;border:1.5px solid var(--ink2);box-sizing:border-box}
 .dots i.on{background:var(--shu);border-color:var(--shu2);height:12px}.dots i.done{background:var(--ink);border-color:var(--ink)}
 button.main,a.main{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:12px;background:var(--shu);color:#fff;font-weight:700;font-size:17px;padding:0 16px;text-align:center;box-shadow:0 4px 0 var(--shu2)}
+button.main,a.main{flex-wrap:wrap;row-gap:0;line-height:1.35}
+button.main small{font-weight:500;font-size:13px}
+.status .sub[hidden]{display:none}
 button.main:active{transform:translateY(2px);box-shadow:0 2px 0 var(--shu2)}
 button.main.alt{background:var(--ink);box-shadow:0 4px 0 #000}
 button.sub,a.sub{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-weight:700;font-size:15px;padding:0 12px;text-align:center}
@@ -521,7 +524,7 @@ function home() {
     <p class="lead">まんなかに1文字入れて、4つの熟語を完成させる。<br>だれでも同じ1日3問。</p>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m, i) => `${LV[i]} ${"★".repeat(starsOf(m))}`).join("　")}</div>` : ""}
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${LV[rd.res.length]}）` : `今日の3問をとく <small>#${dayNo(k)}</small>`}</button>
-    <button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問（ヒント・候補なし）"}</button>
+    <button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：むずかしい3問 <small>ヒント・候補なし</small>"}</button>
     ${(() => { const re = s.runs.e && !doneOf(s.runs.e) ? s.runs.e : null; return `<button class="main alt" id="go-e">${re ? `とことんの続きから（${re.res.length + 1}問目）` : "とことん：何問続けてとける？"}${s.ebest ? ` <small>自己ベスト ${s.ebest}問</small>` : ""}</button>`; })()}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">漢字帳 ${n}/${P.length}</button></div>
     ${miss.length ? `<button class="sub" id="go-late">↺ 取りこぼした日をあとから（${miss.length}日）</button>` : ""}
@@ -531,6 +534,7 @@ function home() {
     <button class="sub" id="go-a11y" data-a11y-open>Aa 見やすさ・読みやすさ</button>
     ${footer()}`;
   $("go-d").onclick = () => (k !== todayKey() ? home() : done ? result("d", k) : startRun("d")); // 画面を開いたまま0時を過ぎたら、今日の状態に描き直す
+  window.scrollTo(0, 0);
   $("go-h").onclick = () => (hdone ? result("h", k) : k === todayKey() ? startRun("h") : home()); // 上級は今日の3問の前でも始められる。画面を開いたまま0時を過ぎたら、翌日の上級は始めない
   $("go-p").onclick = practiceMenu;
   $("go-e").onclick = () => startRun("e");
@@ -601,14 +605,14 @@ function play() {
       ${run.mode === "e" ? `<span></span><span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}問目${s.ebest ? `（ベスト ${s.ebest}）` : ""}</span></header>` : `<div class="dots" aria-label="${i + 1}問目／${run.list.length}問">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>
       <span style="font-size:13px;color:var(--ink2)">${label} ${i + 1}/${run.list.length}</span></header>`}
     <div id="bd">${boardHtml(p, "")}</div>
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる漢字を1字打ちます。</p>` : ""}
     <div class="ansrow" id="inp"><input id="ans" type="text" lang="ja" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="12" placeholder="まんなかの漢字" aria-label="まんなかに入る漢字"><button class="main" id="go" type="button">決める</button></div>
     <div id="near" data-a11y-say></div>
     <div class="status"><span id="miss"></span>${hard ? "<span>ヒントなし</span>" : `<button class="sub" id="hint" style="min-height:44px;padding:0 14px">ヒント（読み）</button>`}</div>
     <div class="tried" id="tried"></div>
     <div class="tiles" id="cands" hidden></div>
     <div id="after"></div>
-    ${run.mode === "e" ? `<p class="note">まちがえてもヒントを見ても続きます。</p><button class="sub" id="quit" style="width:100%">ここで降りる（${i}問で終える）</button>` : ""}
-    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">矢印の向きに読んで、4つとも熟語になる漢字を1字打ちます。</p>` : ""}`;
+    ${run.mode === "e" ? `<p class="note">まちがえてもヒントを見ても続きます。</p><button class="sub" id="quit" style="width:100%">ここで降りる（${i}問で終える）</button>` : ""}`;
   $("back").onclick = home;
   const ans = $("ans");
   // 変換中の Enter では送らない（IME の確定に使う。isComposing と keyCode 229 の両方を見る）
@@ -669,7 +673,7 @@ function guess(ch) {
   let saved = false, newA = [];
   const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; saved = true; r.res.push({ m: mistakes, g: cur.tried.map((c) => bits(maskOf(p, c))), h: cur.hints }); r.cur = null; s.dex[p.x] = Math.max(s.dex[p.x] || 0, st); if (r.mode === "e" && r.res.length >= r.list.length) r.list.push(...moreList(s, p.id)); newA = claimAch(s); }); // とことんは並びを使い切っても終わらない
   if (!saved) { toast("別の画面で先に進んでいます"); return play(); }
-  if ($("hint")) $("hint").disabled = true;
+  if ($("hint")) { $("hint").disabled = true; $("hint").hidden = true; }
   const ws = alt ? wordsOf(p, ch) : p.w;
   $("bd").innerHTML = boardHtml(p, esc(ch), { win: true, mask: 15, yomi: alt ? null : p.r });
   $("bd").firstElementChild.classList.add("lit"); // 4つの熟語が順に灯る
@@ -739,21 +743,22 @@ function result(mode, k, first, prec) {
   if (showKofi) save((s2) => { s2.kofi[k + mode] = 1; });
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>まんなか漢字<small>${mode === "d" ? `今日の3問 #${dayNo(k)}` : mode === "a" ? `#${dayNo(k)} あとから` : mode === "h" ? "上級" : "練習"}</small></h1><span></span></header>
-    <p class="big">${total === 0 ? "全問一発！" : `まちがい・ヒント ${total}`}</p>
+    <p class="big">${total === 0 ? "全問一発！" : `${list.length}問 とけた`}</p>
+    ${total ? `<p class="note" id="rtotal">まちがい・ヒント ${total}回</p>` : ""}
     ${achLine(newA)}
     ${nextLine(s)}
     <div class="rlist">${list.map((id, j) => { const p = P[id]; return `<div><span class="x">${p.x}</span><span class="w"><b>${p.w.join("・")}</b><br>${starStr(starsOf(rec.m[j]))} ${mode === "h" ? "むずかしい" : LV[p.t]}</span></div>`; }).join("")}</div>
+    ${mode !== "p" ? `<button class="main" id="go-e">続けて遊ぶ：とことん${s.ebest ? ` <small>ベスト ${s.ebest}問</small>` : ""}</button>` : ""}
     ${mode !== "p" ? `<div class="share">${esc(text)}</div>
     <button class="main" id="share">結果をシェア</button>
     <div class="shares"><a id="toX" target="_blank" rel="noopener">Xで投稿</a><a id="toLine" target="_blank" rel="noopener">LINEで送る</a><button id="copy">コピー</button></div>
     <p class="note">🟩正解　🟨2つ以上熟語になった字　⬜1つ以下　💡ヒント<br>次の3問まで あと <b>${untilNext()}</b></p>` : ""}
-    ${mode !== "p" ? `<button class="main" id="go-e">続けて遊ぶ：とことん${s.ebest ? `（ベスト ${s.ebest}問）` : ""}</button>` : ""}
     ${mode === "d" && k === todayKey() && !s.hdays[k] ? `<button class="main alt" id="go-h">上級：むずかしい3問に挑む</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習する</button><button class="sub" id="go-dex">漢字帳を見る</button></div>
     <div class="row"><button class="sub" id="go-ach">🏅 実績</button><button class="sub" id="go-cal">📅 記録</button></div>
     ${showKofi ? `<p class="note kofi">楽しめたら、<a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi でコーヒー1杯の応援</a>をもらえると、新しい問題とゲームづくりの励みになります（任意・遊ぶのはずっと無料）。</p>` : ""}
     <p class="note"><a href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a></p>`;
-  $("back").onclick = home;
+  $("back").onclick = home; window.scrollTo(0, 0);
   $("go-p").onclick = practiceMenu;
   if ($("go-e")) $("go-e").onclick = () => startRun("e");
   $("go-dex").onclick = () => dex();
