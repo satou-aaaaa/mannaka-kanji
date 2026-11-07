@@ -447,13 +447,13 @@ try {
       check(`幅${w}px：ホームの大きなボタンの字が途中で折れない（上級は「ヒント・候補なし」を小さく添える）`, wh.length === 0 && (await pu.textContent("#go-h small")) === "ヒント・候補なし", wh.join(" / "));
       check(`幅${w}px：ホームの「今日の3問をとく」は最初の画面に入る`, await pu.evaluate((h) => { const r = document.getElementById("go-d").getBoundingClientRect(); return r.top >= 0 && r.bottom <= h; }, h));
       await pu.click("#go-d");
-      check(`幅${w}px：はじめての一言は盤のすぐ下・入力欄の前にあり、最初の画面に入力欄まで入る`, await pu.evaluate((h) => { const t = document.querySelector("#app .hint"), i = document.getElementById("inp"); return !!t && !!(t.compareDocumentPosition(i) & Node.DOCUMENT_POSITION_FOLLOWING) && i.getBoundingClientRect().bottom <= h; }, h));
+      check(`幅${w}px：はじめての一言は盤のすぐ下・入力欄の前にあり、最初の画面に入力欄まで入る`, await pu.evaluate((h) => { const t = document.querySelector("#app .hint"), i = document.getElementById("inp"), bd = document.getElementById("bd"); return !!t && !!bd && !!(bd.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) && !!(t.compareDocumentPosition(i) & Node.DOCUMENT_POSITION_FOLLOWING) && i.getBoundingClientRect().bottom <= h; }, h));
       for (let j = 0; j < 3; j++) { const q = await curP(pu); if (j === 0) { await type(pu, q.d[0]); } await type(pu, q.x);
         if (j === 0) check(`幅${w}px：正解のあとは押せないヒントのボタンを出さない（次へのボタンが近い）`, !(await pu.locator("#hint").isVisible()) && (await pu.locator("#next").isVisible()));
         await pu.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await pu.click("#next"); }
       check(`幅${w}px：結果の画面は上から始まる（前の画面のスクロールを持ち越さない）`, await pu.evaluate(() => window.scrollY === 0 && document.querySelector("header").getBoundingClientRect().top >= 0));
       check(`幅${w}px：結果の見出しはとけた数・まちがいは小さく添える`, (await pu.textContent(".big")) === "3問 とけた" && (await pu.textContent("#rtotal")).includes("まちがい・ヒント 1回"));
-      check(`幅${w}px：結果の「続けて遊ぶ：とことん」は一覧のすぐ下（シェアより前）で、最初の画面に入る`, await pu.evaluate((h) => { const e = document.getElementById("go-e"), sh = document.querySelector(".share"); return !!(e.compareDocumentPosition(sh) & Node.DOCUMENT_POSITION_FOLLOWING) && e.getBoundingClientRect().bottom <= h; }, h));
+      check(`幅${w}px：結果の「続けて遊ぶ：とことん」は一覧のすぐ下（シェアより前）で、最初の画面に入る`, await pu.evaluate((h) => { const e = document.getElementById("go-e"), sh = document.querySelector(".share"), rl = document.querySelector(".rlist"); return !!e && !!rl && !!(rl.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_FOLLOWING) && e.getBoundingClientRect().top >= rl.getBoundingClientRect().bottom - 0.5 && !!(e.compareDocumentPosition(sh) & Node.DOCUMENT_POSITION_FOLLOWING) && e.getBoundingClientRect().bottom <= h; }, h));
       const wr = await wrapped(pu);
       check(`幅${w}px：結果の大きなボタンの字が途中で折れない`, wr.length === 0, wr.join(" / "));
       await pu.click("#back");
