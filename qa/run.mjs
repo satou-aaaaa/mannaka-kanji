@@ -13,7 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const url = pathToFileURL(path.join(root, "index.html")).href; // # などを含むフォルダ名でも開ける
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
-const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.locator("#core-coach").count()) { await q.evaluate(() => Core.coach.leave()); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
+const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.evaluate(() => !!(window.Core && Core.coach && Core.coach.active()))) { await q.evaluate(() => { Core.coach.leave(); scrollTo(0, 0); }); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
 // 画面のコードに正規表現の後読み (?<! (?<= を書かない（Safari 16.3 まで例外で止まる。2026-11-06 CodeRabbit）
 { const lb = ["index.html", ...readdirSync(root).filter((f) => f.endsWith(".js"))].filter((f) => /\(\?<[!=]/.test(readFileSync(path.join(root, f), "utf8"))); check("画面のコードに正規表現の後読みが無い（古い Safari で止まらない）", lb.length === 0, lb.join(" ")); }
 
@@ -230,7 +230,7 @@ try {
 
   // 4. スマホ幅：はみ出さない・押せる所は44px以上
   for (const w of [320, 390]) {
-    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.click("#f-how")); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
+    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.evaluate(() => openHow())); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
     const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a, input")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
@@ -402,6 +402,7 @@ try {
     check("とことんを何回続けても（200回・1回20問・最近の200問を覚える）、前の回で出した問題が次の回にすぐ戻らない", await pe.evaluate(() => { const g = window.__mk, s = { dex: {}, recent: {} }; let prev = null; for (let n = 0; n < 200; n++) { const L = g.endlessList(s).slice(0, 20); if (prev && L.some((id) => prev.includes(id))) return false; L.forEach((id) => g.markRecent(s, id)); if (Object.keys(s.recent).length > g.RECENT) return false; prev = L; } return true; }));
     check("練習を何回続けても（各難しさ60回・1回3問）、前の回の問題がすぐ戻らない", await pe.evaluate(() => { const g = window.__mk; for (const t of [0, 1, 2]) { const s = { dex: {}, recent: {} }, seen = []; for (let n = 0; n < 60; n++) { const L = g.freshOrder(g.OKPOOL[t], s).slice(0, 3); if (L.some((id) => seen.includes(id))) return false; L.forEach((id) => { g.markRecent(s, id); seen.push(id); }); } } return true; }));
     check("とことんの並びを使い切ったら新しい並びを足す（つなぎ目で同じ問題を続けない・500回）", await pe.evaluate(() => { const g = window.__mk; for (let n = 0; n < 500; n++) { const last = g.ALLOK[n % g.ALLOK.length], L = g.moreList({}, last); if (L[0] === last || new Set(L).size !== g.ALLOK.length) return false; } return true; }));
+    await firstClose(pe);
     check("ホームに「とことん」の大きなボタン・上級ははじめて開いた日から押せる", (await pe.locator("#go-e.main").count()) === 1 && (await pe.textContent("#go-e")).includes("何問続けて") && (await pe.locator("#go-h").count()) === 1);
     await pe.click("#go-e");
     check("とことんの1問目はやさしい・🎫は無く、ヒントは押せる", (await curP(pe)).t === 0 && (await pe.locator("#life").count()) === 0 && !(await pe.textContent("body")).includes("🎫") && !(await pe.locator("#hint").isDisabled()));
@@ -527,11 +528,11 @@ try {
     const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await c.addInitScript(() => { window.__origSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error("QuotaExceededError"); }; });
     const q = await c.newPage(); await q.goto(url); await q.waitForTimeout(300);
-    if (!(await q.locator("#howto[open]").count())) await firstClose(q).then(() => q.click("#f-how"));
+    if (!(await q.locator("#howto[open]").count())) await firstClose(q).then(() => q.evaluate(() => openHow()));
     await firstClose(q); await q.waitForTimeout(100);
     const n1 = await q.locator("#savewarn").count(); await q.waitForTimeout(2000); const n2 = await q.locator("#savewarn").count();
     await q.evaluate(() => { Storage.prototype.setItem = window.__origSetItem; });
-    await firstClose(q).then(() => q.click("#f-how")); await firstClose(q); await q.waitForTimeout(100);
+    await firstClose(q).then(() => q.evaluate(() => openHow())); await firstClose(q); await q.waitForTimeout(100);
     const n3 = await q.locator("#savewarn").count();
     check("保存できないときは帯（#savewarn）を1つ出し、2秒たっても残る。保存できるようになると消える", n1 === 1 && n2 === 1 && n3 === 0, [n1, n2, n3].join(","));
     await c.close();
