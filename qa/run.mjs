@@ -13,6 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const url = pathToFileURL(path.join(root, "index.html")).href; // # などを含むフォルダ名でも開ける
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
+const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.locator("#core-coach").count()) { await q.evaluate(() => Core.coach.leave()); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
 // 画面のコードに正規表現の後読み (?<! (?<= を書かない（Safari 16.3 まで例外で止まる。2026-11-06 CodeRabbit）
 { const lb = ["index.html", ...readdirSync(root).filter((f) => f.endsWith(".js"))].filter((f) => /\(\?<[!=]/.test(readFileSync(path.join(root, f), "utf8"))); check("画面のコードに正規表現の後読みが無い（古い Safari で止まらない）", lb.length === 0, lb.join(" ")); }
 
@@ -157,18 +158,18 @@ try {
     const hit = g.post.filter(([, t]) => bad(t));
     check("区切りの日から3年分の今日の3問・上級に、外す言葉が画面に出る所（答え・熟語・読み・候補の札）のどこにも無い", hit.length === 0, hit.slice(0, 3).map((x) => x[0]).join(","));
     check("とことんを500回作っても外す言葉が出ない", !g.ends.some(bad));
-    const pp = await newPage(); await pp.click("#howto-ok");
+    const pp = await newPage(); await firstClose(pp);
     const prac = await pp.evaluate(() => { const g = window.__mk, out = []; for (let n = 0; n < 300; n++) { g.startRun("p", n % 3); out.push(g.load().runs.p.list.map((id) => { const q = g.P[id]; return [q.x, ...q.w, ...q.r, ...g.tilesOf(q, 4)].join("|"); }).join("||")); } return out; });
     await pp.close();
     check("練習を300回始めても外す言葉が出ない", prac.length === 300 && !prac.some(bad)); }
 
   // 3. 通しで遊ぶ
-  check("初めて開くと遊び方が出る", await page.locator("#howto[open]").count() === 1);
+  check("初めて開くと遊び方が出る", await page.locator("#core-coach").count() === 1);
   await page.keyboard.press("Escape"); await page.waitForTimeout(100); check("遊び方を Esc で閉じられる", await page.locator("#howto[open]").count() === 0);
   await page.reload(); await page.waitForTimeout(200); check("遊び方を Esc で閉じても、開き直したとき出ない", await page.locator("#howto[open]").count() === 0);
-  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await page.click("#howto-ok"); await page.reload(); await page.waitForTimeout(200); check("遊び方を「わかった」で閉じてすぐ読み直しても出ない", await page.locator("#howto[open]").count() === 0);
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await firstClose(page); await page.reload(); await page.waitForTimeout(200); check("遊び方を「わかった」で閉じてすぐ読み直しても出ない", await page.locator("#howto[open]").count() === 0);
   { let again = 0; for (let i = 0; i < 10; i++) { await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await page.keyboard.press("Escape"); await page.reload(); await page.waitForTimeout(200); again += await page.locator("#howto[open]").count(); } check("遊び方を Esc で閉じてすぐ読み直しても出ない（10回）", again === 0); }
-  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); check("「わかった」を押したその場で「見た」が残る", await page.locator("#howto-ok").evaluate((b) => { b.click(); return Object.keys(localStorage).some((k) => { try { return JSON.parse(localStorage.getItem(k)).tut === true; } catch { return false; } }); }));
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); check("はじめての練習が始まったその場で「見た」が残る", await page.evaluate(() => { return Object.keys(localStorage).some((k) => { try { return JSON.parse(localStorage.getItem(k)).tut === true; } catch { return false; } }); })); await firstClose(page);
   check("ホームの例の盤は遊び方と同じ（史・向・昇・位）", (await page.textContent(".hero .board")).replace(/[\s↓→]/g, "") === "史向？昇位");
   await page.click("#go-d");
   let p = await curP(page);
@@ -229,7 +230,7 @@ try {
 
   // 4. スマホ幅：はみ出さない・押せる所は44px以上
   for (const w of [320, 390]) {
-    const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
+    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.click("#f-how")); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
     const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a, input")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
@@ -240,13 +241,13 @@ try {
     const pb = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pb.on("pageerror", (e) => errors.push(e.message));
     await pb.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error("blocked"); }; });
-    await pb.goto(url); await pb.click("#howto-ok"); await pb.click("#go-d");
+    await pb.goto(url); await firstClose(pb); await pb.click("#go-d");
     check("保存できないブラウザでも、今日の1問目が始まる", (await pb.textContent("header")).includes("1/3"));
     await pb.click("#back");
     check("保存できないブラウザでも、遊び方が何度も開かない", !(await pb.locator("#howto[open]").count()));
     await pb.close(); }
   { // ヒントを出したあとにまちがえても、盤の ○× は消えない
-    const ph = await newPage(); await ph.click("#howto-ok").catch(() => {}); await ph.click("#go-p"); await ph.locator(".lv button").first().click();
+    const ph = await newPage(); await firstClose(ph).catch(() => {}); await ph.click("#go-p"); await ph.locator(".lv button").first().click();
     const q = await curP(ph); await ph.click("#hint");
     const w = q.d.find((y) => y !== q.x); await type(ph, w);
     check("ヒントのあとにまちがえても、盤に ○× が出たまま", (await ph.locator(".mk.ok").count()) + (await ph.locator(".mk.ng").count()) === 4);
@@ -291,7 +292,7 @@ try {
     check("時計が戻っても、保存の時刻 t は前より大きくなる", await pn.evaluate((K) => { const s0 = JSON.parse(localStorage.getItem(K)); const far = Date.now() + 1e9; localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: far }))); save(() => {}); return JSON.parse(localStorage.getItem(K)).t > far; }, "mannaka-v1"));
     await pn.close(); }
   // 4b. 入力して答える
-  { const pi = await newPage(320, 700); await pi.click("#howto-ok"); await pi.click("#go-p"); await pi.locator(".lv button").first().click();
+  { const pi = await newPage(320, 700); await firstClose(pi); await pi.click("#go-p"); await pi.locator(".lv button").first().click();
     let q = await curP(pi);
     const box = await pi.evaluate(() => ["#ans", "#go"].map((s) => document.querySelector(s).getBoundingClientRect().height));
     check("幅320px：入力欄と「決める」は高さ44px以上", box.every((h) => h >= 44), box.join(","));
@@ -314,14 +315,14 @@ try {
     check("NFKC で全角・半角のゆれをそろえる（ｶﾀｶﾅ・全角英数字も整える）", await pi.evaluate(() => { const p = window.__mk.P[0]; return window.__mk.pickKanji(" ｱｲ ", p).ch === undefined && window.__mk.pickKanji("　上　", p).ch === "上" && window.__mk.pickKanji("⼈", p).ch === "人"; }));
     await pi.close(); }
   { // 別解：ほかの字でも4つとも辞書の熟語になるなら正解にして「別解」と出す
-    const pj = await newPage(); await pj.click("#howto-ok"); await pj.click("#go-p"); await pj.locator(".lv button").first().click();
+    const pj = await newPage(); await firstClose(pj); await pj.click("#go-p"); await pj.locator(".lv button").first().click();
     const q = await curP(pj), y = "鬱";
     await pj.evaluate(([q, y]) => { const W = window.MK_WORDS; W.F[q.w[0][0]] += y; W.F[q.w[1][0]] += y; W.B[q.w[2][1]] += y; W.B[q.w[3][1]] += y; }, [q, y]);
     await type(pj, y);
     check("別解（ほかの字でも4つとも熟語）は正解にして「別解」と出す・漢字帳はその問題の字", (await pj.locator(".verdict").count()) === 1 && (await pj.textContent(".verdict")).includes("別解") && (await pj.evaluate((x) => !!window.__mk.load().dex[x], q.x)));
     await pj.close(); }
   { // ヒント：読み2つ → 最後に候補4つ（★が下がる）。打った字は辞書で数える
-    const ph = await newPage(); await ph.click("#howto-ok"); await ph.click("#go-p"); await ph.locator(".lv button").nth(1).click();
+    const ph = await newPage(); await firstClose(ph); await ph.click("#go-p"); await ph.locator(".lv button").nth(1).click();
     const q = await curP(ph);
     for (let j = 0; j < 3; j++) await ph.click("#hint");
     const c = await ph.$$eval("#cands .tile", (a) => a.map((b) => b.dataset.ch));
@@ -395,7 +396,7 @@ try {
     check("カレンダー：★6の日は薄い朱（d1）・上級の日は印（hd）・はじめの月より前には戻れない", /\bd1\b/.test(c) && /\bhd\b/.test(c) && (await pk.isDisabled("#cal-prev")), c);
     await pk.close(); }
   { // とことん：次々に出る・やさしい→ふつう→むずかしい・まちがい・ヒントでは終わらず何も減らない・降りると自己ベスト（2026-11-05「一日で遊べる量が少なすぎる」・2026-11-06「好きなだけ遊んでほしい」satou さん）
-    const pe = await newPage(); await pe.click("#howto-ok");
+    const pe = await newPage(); await firstClose(pe);
     check("とことんの並び（300回）：やさしい5→ふつう10→むずかしい45のあと残り全部、1回の中で同じ問題は出ない・外す問題は入れない・毎回ちがう並び", await pe.evaluate(() => { const g = window.__mk, firsts = new Set(), N = g.ALLOK.length; for (let n = 0; n < 300; n++) { const L = g.endlessList(); if (L.length !== N || new Set(L).size !== N || L.some((id) => g.NGID.has(id))) return false; const t = L.map((id) => g.P[id].t); if (!t.slice(0, 60).every((x, i) => x === (i < 5 ? 0 : i < 15 ? 1 : 2))) return false; firsts.add(L.slice(0, 5).join()); } return N > 700 && firsts.size > 250; }));
     check("とことん・練習はまだといていない字を先に、最近出した問題を後ろに（300回）", await pe.evaluate(() => { const g = window.__mk, ids = g.OKPOOL[0], dex = {}, recent = {}; ids.slice(0, 100).forEach((id) => (dex[g.P[id].x] = 3)); ids.slice(100, 150).forEach((id, j) => (recent[id] = 1e12 + j)); for (let n = 0; n < 300; n++) { const L = g.freshOrder(ids, { dex, recent }), cls = (id) => (id in recent ? 2 : g.P[id].x in dex ? 1 : 0); for (let i = 1; i < L.length; i++) if (cls(L[i]) < cls(L[i - 1])) return false; const rs = L.filter((id) => id in recent); for (let i = 1; i < rs.length; i++) if (recent[rs[i]] < recent[rs[i - 1]]) return false; } return true; }));
     check("とことんを何回続けても（200回・1回20問・最近の200問を覚える）、前の回で出した問題が次の回にすぐ戻らない", await pe.evaluate(() => { const g = window.__mk, s = { dex: {}, recent: {} }; let prev = null; for (let n = 0; n < 200; n++) { const L = g.endlessList(s).slice(0, 20); if (prev && L.some((id) => prev.includes(id))) return false; L.forEach((id) => g.markRecent(s, id)); if (Object.keys(s.recent).length > g.RECENT) return false; prev = L; } return true; }));
@@ -448,7 +449,7 @@ try {
   { // スマホで初めて遊ぶ人の使いやすさ（2026-11-07 UI/UX の見直し）
     const wrapped = (pg) => pg.evaluate(() => [...document.querySelectorAll("#app button.main")].filter((b) => b.checkVisibility()).flatMap((b) => { const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT), out = []; for (let t; (t = w.nextNode());) { if (!t.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(t); const tops = new Set([...r.getClientRects()].map((x) => Math.round(x.top))); if (tops.size > 1) out.push(t.textContent.trim()); } return out; }));
     for (const [w, h] of [[390, 844], [320, 640]]) {
-      const pu = await newPage(w, h); await pu.click("#howto-ok");
+      const pu = await newPage(w, h); await firstClose(pu);
       const wh = await wrapped(pu);
       check(`幅${w}px：ホームの大きなボタンの字が途中で折れない（上級は「ヒント・候補なし」を小さく添える）`, wh.length === 0 && (await pu.textContent("#go-h small")) === "ヒント・候補なし", wh.join(" / "));
       check(`幅${w}px：ホームの「今日の3問をとく」は最初の画面に入る`, await pu.evaluate((h) => { const r = document.getElementById("go-d").getBoundingClientRect(); return r.top >= 0 && r.bottom <= h; }, h));
@@ -505,7 +506,7 @@ try {
   try { // キーボードで選んだボタンに枠が出る（all:unset のカレンダーのます目でも消えない。2026-11-04 CodeRabbit の指摘）。止まっても失敗として記録し、レポートまで進む
     const pf = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await pf.goto(url); await pf.evaluate(() => localStorage.clear()); await pf.reload();
-    await pf.click("#howto-ok").catch(() => {});
+    await firstClose(pf).catch(() => {});
     const bad = [];
     for (const open of [null, "#go-cal"]) {
       if (open) await pf.click(open);
@@ -520,17 +521,17 @@ try {
     await pf.close();
   } catch (e) { check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", false, e.message.split("\n")[0]); }
   try { // 引き継ぎコード（別の端末へ記録を移す。shared-workflows template/qa/transfer-check.mjs）
-    await checkTransfer({ browser, url, game: "mannaka-kanji", sample: { "mannaka-v1": JSON.stringify({ v: 1, tut: true }) }, check, open: async (p) => { await p.click("#howto-ok", { timeout: 1500 }).catch(() => {}); } });
+    await checkTransfer({ browser, url, game: "mannaka-kanji", sample: { "mannaka-v1": JSON.stringify({ v: 1, tut: true }) }, check, open: async (p) => { await firstClose(p).catch(() => {}); } });
   } catch (e) { check("引き継ぎコード", false, e.message.split("\n")[0]); }
   try { // 保存できないとき：帯 #savewarn で知らせ、2秒たっても残し、保存できるようになったら消す（黙っていると開き直したとき記録が消える。shared-workflows incidents/2026-11-07-save-failure-silent.md）
     const c = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await c.addInitScript(() => { window.__origSetItem = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new Error("QuotaExceededError"); }; });
     const q = await c.newPage(); await q.goto(url); await q.waitForTimeout(300);
-    if (!(await q.locator("#howto[open]").count())) await q.click("#f-how");
-    await q.click("#howto-ok"); await q.waitForTimeout(100);
+    if (!(await q.locator("#howto[open]").count())) await firstClose(q).then(() => q.click("#f-how"));
+    await firstClose(q); await q.waitForTimeout(100);
     const n1 = await q.locator("#savewarn").count(); await q.waitForTimeout(2000); const n2 = await q.locator("#savewarn").count();
     await q.evaluate(() => { Storage.prototype.setItem = window.__origSetItem; });
-    await q.click("#f-how"); await q.click("#howto-ok"); await q.waitForTimeout(100);
+    await firstClose(q).then(() => q.click("#f-how")); await firstClose(q); await q.waitForTimeout(100);
     const n3 = await q.locator("#savewarn").count();
     check("保存できないときは帯（#savewarn）を1つ出し、2秒たっても残る。保存できるようになると消える", n1 === 1 && n2 === 1 && n3 === 0, [n1, n2, n3].join(","));
     await c.close();
